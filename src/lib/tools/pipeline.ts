@@ -386,6 +386,7 @@ async function draftMessages(
   }
 
   const drafts: MessageDraft[] = [];
+  let fallbackReason = draftWithAI ? 'AI output was rejected or provider request failed' : 'LLM_API_KEY is missing from the server environment';
   for (const a of refundable) {
     const refundFormatted = formatMYR(a.refundSen);
     const firstName = a.customerName.split(' ')[0];
@@ -416,6 +417,7 @@ async function draftMessages(
           error instanceof Error && error.name === 'AbortError' ? 'provider_timeout' :
           'provider_request_failed';
         console.warn('[SikHal AI] Draft fallback:', category);
+        fallbackReason = category;
         // Still use a safe template instead of breaking the financial workflow.
       }
     }
@@ -438,7 +440,7 @@ async function draftMessages(
   return {
     output: drafts,
     summary: `Drafted ${drafts.length} customer message${drafts.length === 1 ? '' : 's'}` +
-      (usingAi ? ' using AI.' : ' using the built-in template (no AI key configured).'),
+      (usingAi ? ' using AI.' : ` using built-in templates. Reason: ${fallbackReason}.`),
   };
 }
 
