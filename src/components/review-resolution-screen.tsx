@@ -490,8 +490,8 @@ export function ReviewResolutionScreen({
               Ready-to-copy messages ({resolution.drafts.length})
             </CardTitle>
             <CardDescription>
-              Drafts are staged, not sent. Sending happens only after you approve — and the MVP
-              records the action without a live messaging gateway.
+              Drafts are for your review and copying. SikHal does not automatically send messages,
+              even after approval.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
