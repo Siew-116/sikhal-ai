@@ -2,6 +2,15 @@
 
 AI-powered resolution of disrupted group-buy orders for Malaysian student entrepreneurs — without forcing anyone to choose between their business and their studies.
 
+# Presentation slides
+
+
+# Demo link
+https://sikhal-ai.vercel.app/
+Sign in with credentials:
+username: demo
+Password: 123456789qwertyuiop
+
 ## The problem
 
 Student entrepreneurs in Malaysia run group-buy (团购) orders alongside a full academic timetable. When a supplier cancels, a batch arrives damaged, or an order collapses midway, the founder is left holding a pile of manual reconciliation work: who paid, who is owed what, and how to refund in MYR without losing money on rounding. That work lands exactly when lectures and exams land.
