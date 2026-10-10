@@ -29,7 +29,7 @@ export function AppHeader({
         <div className="flex items-baseline gap-3">
           <Link
             href="/"
-            className="text-[23px] font-bold tracking-[-0.065em] text-primary"
+            className="text-[23px] font-black tracking-[-0.055em] text-primary"
             aria-label="SikHal home"
           >
             sikhal<span className="text-[#C86B4A]">.</span>
