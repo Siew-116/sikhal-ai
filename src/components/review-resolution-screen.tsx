@@ -214,23 +214,23 @@ export function ReviewResolutionScreen({
           Back to new case
         </Link>
 
-        <section className="mt-7 border-b border-border-strong pb-7">
+        <section className="mt-8 rounded-2xl border border-[#DBE5DA] bg-[#EDF4EC] px-6 py-7 md:px-9 md:py-9">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs font-semibold tracking-[0.07em] text-text-secondary">
-              RESOLUTION / {caseRecord.orderRef}
+              CASE REVIEW / {caseRecord.orderRef}
             </p>
             <StatusPill status={resolution.status} />
           </div>
-          <h1 className="mt-3 text-[clamp(2rem,4vw,3rem)] font-semibold tracking-[-0.05em]">
-            Review before you approve.
+          <h1 className="mt-4 text-[clamp(2rem,4.2vw,3.5rem)] font-semibold leading-[1.1] tracking-[-0.055em]">
+            Your resolution, at a glance.
           </h1>
           <p className="mt-2 text-sm text-text-secondary">
             {caseRecord.supplierName} · {refundable.length} affected customer{refundable.length === 1 ? '' : 's'}
           </p>
-          <div className="mt-7 flex flex-wrap items-end gap-x-12 gap-y-5">
+          <div className="mt-8 flex flex-wrap items-end gap-x-12 gap-y-6 border-t border-[#D2DFD1] pt-6">
             <div>
-              <p className="text-xs font-medium text-text-secondary">TOTAL PROPOSED REFUND</p>
-              <p className="tabular mt-1 text-[clamp(2.3rem,5vw,3.5rem)] font-semibold leading-none tracking-[-0.055em] text-text-primary">
+              <p className="text-xs font-medium text-text-secondary">PROPOSED REFUND TOTAL</p>
+              <p className="tabular mt-1 text-[clamp(2.5rem,5vw,4rem)] font-semibold leading-none tracking-[-0.055em] text-text-primary">
                 {formatMYR(resolution.totalRefundSen)}
               </p>
             </div>
@@ -245,7 +245,7 @@ export function ReviewResolutionScreen({
               </p>
             </div>
           </div>
-          <p className="mt-5 text-xs text-text-muted">Proposal only. No money transferred and no messages sent.</p>
+          <p className="mt-5 text-xs text-text-muted">Review the proposal before approving. No transfers or messages are sent by SikHal.</p>
         </section>
 
         {/* ── ACADEMIC CONFLICT — the loudest element on the page ─────── */}
@@ -326,7 +326,7 @@ export function ReviewResolutionScreen({
           </Alert>
         )}
 
-        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <div className="mt-7 grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
           {/* ── Refunds ───────────────────────────────────────────────── */}
           <Card>
             <CardHeader>
