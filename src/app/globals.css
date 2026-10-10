@@ -10,20 +10,20 @@
  * Light mode only — dark mode is explicitly out of MVP scope.
  */
 :root {
-  --bg: #f8f9f6;
+  --bg: #f8f9f7;
   --surface: #ffffff;
   --surface-sunken: #f0f2ed;
-  --border: #e0e5dd;
-  --border-strong: #c3c3b8;
+  --border: #e5e9e4;
+  --border-strong: #cbd3cd;
 
-  --text-primary: #202a24;
-  --text-secondary: #54645b;
+  --text-primary: #172820;
+  --text-secondary: #52665c;
   --text-muted: #68776e;
 
-  --primary: #243b36;
-  --primary-hover: #1c302b;
+  --primary: #18392d;
+  --primary-hover: #10291f;
   --primary-fg: #f7f7f2;
-  --accent: #436e5a;
+  --accent: #2b6951;
 
   --success: #2e6b4f;
   --success-bg: #e7efe9;
@@ -42,8 +42,8 @@
   --focus-ring: #3e6b5c;
 
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
   --radius-full: 9999px;
 
   --elev-1: 0 1px 2px rgba(27, 38, 33, 0.06);
@@ -99,7 +99,7 @@
 @layer components {
   .sikhal-container {
     width: 100%;
-    max-width: 1180px;
+    max-width: 1120px;
     margin-inline: auto;
     padding-inline: 20px;
   }
@@ -113,7 +113,19 @@
 
 @layer components {
   .sikhal-container > section:first-of-type { margin-top: 12px; }
-  .sikhal-container .rounded-md { border-radius: 8px; }
+  .sikhal-container .rounded-md { border-radius: 12px; }
   .sikhal-container input, .sikhal-container textarea, .sikhal-container select { transition: border-color .15s ease, box-shadow .15s ease; }
   .sikhal-container input:focus, .sikhal-container textarea:focus { border-color: #436e5a; }
+}
+
+/* Clean, high-contrast product UI. Decorative motion is avoided. */
+@layer components {
+  .sikhal-container h1,
+  .sikhal-container h2,
+  .sikhal-container h3 { text-wrap: balance; }
+  .sikhal-container button { transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease; }
+  .sikhal-container table th { letter-spacing: .01em; }
+  .sikhal-container input,
+  .sikhal-container textarea,
+  .sikhal-container select { background: #fff; }
 }
