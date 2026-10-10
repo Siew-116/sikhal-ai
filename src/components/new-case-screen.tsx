@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, Loader2, Check, ShieldCheck, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AppHeader } from '@/components/app-header';
@@ -226,7 +226,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
         } else {
           setRunSteps((prev) => prev.map((s) => ({ ...s, status: 'error' as const })));
         }
-        setFormError(payload.error ?? 'The agent could not complete the run.');
+        setFormError(payload.error ?? 'Something needs attention.');
         setRunning(false);
         return;
       }
@@ -261,52 +261,44 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
       <AppHeader screenTitle="New Case" storageLabel={storageLabel} storageKind={storageKind} />
 
       <main className="sikhal-container py-6 md:py-10">
-        <h1 className="text-title font-semibold md:text-display">New Case</h1>
-        <p className="mt-2 max-w-prose text-body text-text-secondary">
-          Record a supplier cancellation for a group-buy order. SikHal will identify the affected
-          customers, work out what each is owed, and draft their messages — you approve before
-          anything happens.
-        </p>
-
-        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-          {/* ── Demo path ─────────────────────────────────────────────── */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
-                <CardTitle className="text-subheading">
-                  {sampleLoaded ? 'Sample case loaded' : 'Try it with sample data'}
-                </CardTitle>
-              </div>
-              <CardDescription>
-                {sampleLoaded
-                  ? 'This is fictional demo data — a Sarawak supplier cancellation with six customers.'
-                  : 'Load a fictional Sarawak group-buy case so you can see the whole flow without typing.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-3">
-              {sampleLoaded ? (
-                <>
-                  <Badge variant="info">SAMPLE DATA</Badge>
-                  <Button variant="outline" size="sm" onClick={clearSample}>
-                    Clear
-                  </Button>
-                </>
-              ) : (
-                <Button variant="outline" onClick={loadSample} disabled={loadingSample}>
-                  {loadingSample ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                      Loading sample…
-                    </>
-                  ) : (
-                    'Load sample case'
-                  )}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
+        <section className="mb-10 grid gap-8 border-b border-border pb-10 lg:grid-cols-[minmax(0,1fr)_350px] lg:items-center">
+          <div>
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-accent">For student entrepreneurs</p>
+            <h1 className="max-w-[720px] text-[clamp(2.35rem,5vw,4rem)] font-semibold leading-[1.12] tracking-[-0.055em] text-text-primary">
+              Supplier cancelled?<br /><span className="text-accent">We've got the next steps.</span>
+            </h1>
+            <p className="mt-5 max-w-[540px] text-base leading-7 text-text-secondary">
+              Find affected buyers, prepare accurate refund proposals and customer updates, and keep business tasks out of study hours.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-secondary">
+              <span className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Find affected orders</span>
+              <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-accent" /> Review refunds first</span>
+              <span className="inline-flex items-center gap-2"><BookOpen className="h-4 w-4 text-accent" /> Protect class time</span>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-[#D9E1DA] bg-[#EAF0EB] p-6 sm:p-7">
+            <div className="mb-5 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-widest text-[#486558]">Quick start</span>
+              <span className="rounded-full border border-[#BBD0C2] px-2.5 py-1 text-xs text-[#355443]">No account needed</span>
+            </div>
+            <h2 className="text-2xl font-semibold tracking-tight text-[#243B36]">See SikHal in action.</h2>
+            <p className="mt-2 text-sm leading-6 text-[#50655B]">Use a fictional Sarawak group-buy cancellation with six customers. No setup or typing required.</p>
+            <Button className="mt-6 w-full" onClick={loadSample} disabled={loadingSample || running}>
+              {loadingSample ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+              {sampleLoaded ? 'Reload example' : 'Load example case'}
+            </Button>
+            {sampleLoaded && <p className="mt-3 text-center text-xs text-[#355443]">Example loaded. Review the details below, then prepare the resolution.</p>}
+          </div>
+        </section>
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-accent">01 / The problem</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight">What happened to the order?</h2>
+            <p className="mt-1 text-sm text-text-secondary">Use the example above or enter a supplier cancellation yourself.</p>
+          </div>
+          {sampleLoaded && <Button variant="outline" size="sm" onClick={clearSample} disabled={running}>Clear example</Button>}
+        </div>
+        <div className="max-w-[840px]">
           {/* ── Case details ──────────────────────────────────────────── */}
           <Card>
             <CardHeader>
@@ -372,6 +364,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
         </div>
 
         {/* ── Affected order records ────────────────────────────────── */}
+        <div className="mb-4 mt-10"><p className="text-xs font-semibold uppercase tracking-wider text-accent">02 / The customers</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Who is affected?</h2><p className="mt-1 text-sm text-text-secondary">Enter one row per cancelled order item.</p></div>
         <Card className="mt-5">
           <CardHeader className="flex-row items-center justify-between">
             <div>
@@ -612,7 +605,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
                 </>
               ) : (
                 <>
-                  Run resolution agent
+                  Prepare resolution
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </>
               )}

@@ -187,12 +187,12 @@ export function ReviewResolutionScreen({
           className="inline-flex items-center gap-1.5 text-body-sm text-accent hover:underline"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          New case
+          Back to new case
         </Link>
 
         <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-title font-semibold md:text-display">Review Resolution</h1>
+            <h1 className="text-[clamp(2rem,4vw,3.25rem)] font-semibold tracking-[-0.05em]">Your resolution plan</h1>
             <p className="mt-2 max-w-prose text-body text-text-secondary">
               {caseRecord.supplierName} cancelled {caseRecord.orderRef}.{' '}
               {refundable.length} customer{refundable.length === 1 ? '' : 's'} affected,{' '}
@@ -273,7 +273,7 @@ export function ReviewResolutionScreen({
           {/* ── Refunds ───────────────────────────────────────────────── */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-subheading">Refunds</CardTitle>
+              <CardTitle className="text-subheading">Proposed refunds</CardTitle>
               <CardDescription>
                 Computed server-side in exact sen. Amounts are authoritative.
               </CardDescription>
@@ -369,7 +369,7 @@ export function ReviewResolutionScreen({
           {/* ── Timeline ─────────────────────────────────────────────── */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-subheading">Resolution timeline</CardTitle>
+              <CardTitle className="text-subheading">Your action plan</CardTitle>
             </CardHeader>
             <CardContent>
               <ol className="grid gap-4">
@@ -449,7 +449,7 @@ export function ReviewResolutionScreen({
         <Card className="mt-5">
           <CardHeader>
             <CardTitle className="text-subheading">
-              Customer messages ({resolution.drafts.length})
+              Ready-to-copy messages ({resolution.drafts.length})
             </CardTitle>
             <CardDescription>
               Drafts are staged, not sent. Sending happens only after you approve — and the MVP
