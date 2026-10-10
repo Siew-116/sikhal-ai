@@ -261,34 +261,45 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
       <AppHeader screenTitle="New Case" storageLabel={storageLabel} storageKind={storageKind} />
 
       <main className="sikhal-container py-6 md:py-10">
-        <section className="mb-10 grid gap-8 border-b border-border-strong pb-9 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-end">
-          <div>
-            <p className="mb-4 text-xs font-semibold tracking-[0.07em] text-text-secondary">SIKHAL / NEW CASE</p>
-            <h1 className="max-w-[650px] text-[clamp(2.15rem,4vw,3.5rem)] font-semibold leading-[1.12] tracking-[-0.055em] text-text-primary">
-              Resolve a cancelled order.
+        <section className="grid gap-10 border-b border-border-strong pb-12 pt-9 lg:grid-cols-[minmax(0,1fr)_minmax(320px,.86fr)] lg:items-stretch lg:gap-14">
+          <div className="flex flex-col justify-center">
+            <p className="sikhal-eyebrow mb-6">01 / THE PROBLEM — START HERE</p>
+            <h1 className="sikhal-display max-w-[700px] text-[clamp(3.6rem,7.5vw,7.2rem)]">
+              ORDER<br/>CANCELLED<span className="text-accent">.</span><br/>MOVE FORWARD.
             </h1>
-            <p className="mt-4 max-w-[530px] text-[15px] leading-7 text-text-secondary">
-              Work out who is owed a refund, prepare the messages, and choose a time that works around class.
+            <p className="mt-7 max-w-[520px] text-base leading-7 text-text-primary">
+              Turn a supplier cancellation into a clear refund plan. Know who is owed what, avoid class-time clashes, and keep every decision on record.
             </p>
-            <p className="mt-5 text-xs leading-5 text-text-muted">
-              Refund amounts come from recorded payments. Nothing is sent or paid automatically.
+            <p className="mt-6 max-w-[520px] font-mono text-[11px] leading-5 text-text-secondary">
+              EXACT MYR REFUNDS / HUMAN APPROVAL / NO AUTOMATIC PAYMENTS OR MESSAGES
             </p>
           </div>
-          <aside className="border-l-2 border-primary bg-[#F2F4EE] px-5 py-5">
-            <p className="text-xs font-semibold tracking-[0.06em] text-text-secondary">TRY A SAMPLE</p>
-            <h2 className="mt-2 text-lg font-semibold tracking-tight text-text-primary">Six customers. One cancellation.</h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">A fictional Sarawak group buy with recorded payments and a study-time conflict.</p>
-            <Button className="mt-5 w-full" onClick={loadSample} disabled={loadingSample || running}>
-              {loadingSample ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              {sampleLoaded ? 'Reset to sample' : 'Use sample case'}
-            </Button>
-            {sampleLoaded && <p className="mt-3 text-xs text-text-secondary">Sample loaded below.</p>}
+          <aside className="flex flex-col border border-border-strong bg-[#F8F5EA]">
+            <div className="flex items-center justify-between gap-4 border-b border-border-strong px-5 py-4">
+              <p className="sikhal-eyebrow">EXAMPLE CASE / 014</p>
+              <span className="font-mono text-[11px] text-text-secondary">SARAWAK</span>
+            </div>
+            <div className="flex flex-1 flex-col justify-center p-6 sm:p-9">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">SIX CUSTOMERS. ONE CANCELLED ORDER.</p>
+              <h2 className="sikhal-display mt-6 text-[clamp(2.8rem,4vw,4.8rem)]">SEE THE<br/>RESOLUTION.</h2>
+              <p className="mt-5 max-w-[340px] text-sm leading-6 text-text-secondary">
+                Test SikHal with fictional payments, refund calculations, and an academic calendar conflict.
+              </p>
+              <Button className="mt-8 w-full justify-between" onClick={loadSample} disabled={loadingSample || running}>
+                {sampleLoaded ? 'Reload sample case' : 'Load sample case'}
+                {loadingSample ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+              </Button>
+              {sampleLoaded && <p className="mt-4 font-mono text-[11px] text-text-secondary">Sample records are ready below.</p>}
+            </div>
+            <div className="border-t border-border-strong px-5 py-3 font-mono text-[10px] text-text-secondary">
+              DEMONSTRATION DATA — NOTHING PAID OR SENT
+            </div>
           </aside>
         </section>
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-6 mt-10 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-accent">01 — CASE DETAILS</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight">What happened?</h2>
+            <p className="sikhal-eyebrow">01 — CASE DETAILS</p>
+            <h2 className="mt-2 text-[clamp(1.8rem,3vw,2.7rem)] font-semibold tracking-[-0.045em]">What happened?</h2>
             <p className="mt-1 text-sm text-text-secondary">Start with the supplier and order details.</p>
           </div>
           {sampleLoaded && <Button variant="outline" size="sm" onClick={clearSample} disabled={running}>Clear example</Button>}
