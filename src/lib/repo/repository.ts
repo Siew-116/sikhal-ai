@@ -108,6 +108,11 @@ export async function getRepository(): Promise<Repository> {
     const { SupabaseRepository } = await import('./repository.supabase');
     cached = new SupabaseRepository(config);
   } else {
+    // Vercel production instances cannot safely or durably use process-local memory.
+    // Refuse to start instead of silently advertising fake persistence.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Production storage is not configured. Set Supabase environment variables.');
+    }
     const { MemoryRepository } = await import('./repository.memory');
     cached = new MemoryRepository();
   }
