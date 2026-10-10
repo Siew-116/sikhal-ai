@@ -3,11 +3,11 @@
 AI-powered resolution of disrupted group-buy orders for Malaysian student entrepreneurs — without forcing anyone to choose between their business and their studies.
 
 # Presentation slides
-
+https://canva.link/oio8j0n3lowz8sv
 
 # Demo link
 https://sikhal-ai.vercel.app/
-Sign in with credentials:
+## Sign in with credentials:
 username: demo
 Password: 123456789qwertyuiop
 
