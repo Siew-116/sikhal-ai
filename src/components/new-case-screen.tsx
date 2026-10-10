@@ -261,40 +261,35 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
       <AppHeader screenTitle="New Case" storageLabel={storageLabel} storageKind={storageKind} />
 
       <main className="sikhal-container py-6 md:py-10">
-        <section className="mb-10 grid gap-8 border-b border-border pb-10 lg:grid-cols-[minmax(0,1fr)_350px] lg:items-center">
+        <section className="mb-10 grid gap-8 border-b border-border-strong pb-9 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-end">
           <div>
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-accent">For student entrepreneurs</p>
-            <h1 className="max-w-[720px] text-[clamp(2.35rem,5vw,4rem)] font-semibold leading-[1.12] tracking-[-0.055em] text-text-primary">
-              Supplier cancelled?<br /><span className="text-accent">We've got the next steps.</span>
+            <p className="mb-4 text-xs font-semibold tracking-[0.07em] text-text-secondary">SIKHAL / NEW CASE</p>
+            <h1 className="max-w-[650px] text-[clamp(2.15rem,4vw,3.5rem)] font-semibold leading-[1.12] tracking-[-0.055em] text-text-primary">
+              Resolve a cancelled order.
             </h1>
-            <p className="mt-5 max-w-[540px] text-base leading-7 text-text-secondary">
-              Find affected buyers, prepare accurate refund proposals and customer updates, and keep business tasks out of study hours.
+            <p className="mt-4 max-w-[530px] text-[15px] leading-7 text-text-secondary">
+              Work out who is owed a refund, prepare the messages, and choose a time that works around class.
             </p>
-            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-secondary">
-              <span className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Find affected orders</span>
-              <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-accent" /> Review refunds first</span>
-              <span className="inline-flex items-center gap-2"><BookOpen className="h-4 w-4 text-accent" /> Protect class time</span>
-            </div>
+            <p className="mt-5 text-xs leading-5 text-text-muted">
+              Refund amounts come from recorded payments. Nothing is sent or paid automatically.
+            </p>
           </div>
-          <div className="rounded-2xl border border-[#D9E1DA] bg-[#EAF0EB] p-6 sm:p-7">
-            <div className="mb-5 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-widest text-[#486558]">Quick start</span>
-              <span className="rounded-full border border-[#BBD0C2] px-2.5 py-1 text-xs text-[#355443]">No account needed</span>
-            </div>
-            <h2 className="text-2xl font-semibold tracking-tight text-[#243B36]">See SikHal in action.</h2>
-            <p className="mt-2 text-sm leading-6 text-[#50655B]">Use a fictional Sarawak group-buy cancellation with six customers. No setup or typing required.</p>
-            <Button className="mt-6 w-full" onClick={loadSample} disabled={loadingSample || running}>
+          <aside className="border-l-2 border-primary bg-[#F2F4EE] px-5 py-5">
+            <p className="text-xs font-semibold tracking-[0.06em] text-text-secondary">TRY A SAMPLE</p>
+            <h2 className="mt-2 text-lg font-semibold tracking-tight text-text-primary">Six customers. One cancellation.</h2>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">A fictional Sarawak group buy with recorded payments and a study-time conflict.</p>
+            <Button className="mt-5 w-full" onClick={loadSample} disabled={loadingSample || running}>
               {loadingSample ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              {sampleLoaded ? 'Reload example' : 'Load example case'}
+              {sampleLoaded ? 'Reset to sample' : 'Use sample case'}
             </Button>
-            {sampleLoaded && <p className="mt-3 text-center text-xs text-[#355443]">Example loaded. Review the details below, then prepare the resolution.</p>}
-          </div>
+            {sampleLoaded && <p className="mt-3 text-xs text-text-secondary">Sample loaded below.</p>}
+          </aside>
         </section>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-accent">01 / The problem</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight">What happened to the order?</h2>
-            <p className="mt-1 text-sm text-text-secondary">Use the example above or enter a supplier cancellation yourself.</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-accent">01 — CASE DETAILS</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight">What happened?</h2>
+            <p className="mt-1 text-sm text-text-secondary">Start with the supplier and order details.</p>
           </div>
           {sampleLoaded && <Button variant="outline" size="sm" onClick={clearSample} disabled={running}>Clear example</Button>}
         </div>
@@ -364,7 +359,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
         </div>
 
         {/* ── Affected order records ────────────────────────────────── */}
-        <div className="mb-4 mt-10"><p className="text-xs font-semibold uppercase tracking-wider text-accent">02 / The customers</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Who is affected?</h2><p className="mt-1 text-sm text-text-secondary">Enter one row per cancelled order item.</p></div>
+        <div className="mb-4 mt-10"><p className="text-xs font-semibold uppercase tracking-wider text-accent">02 — ORDER RECORDS</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Who paid for the cancelled items?</h2><p className="mt-1 text-sm text-text-secondary">Enter one row per cancelled order item.</p></div>
         <Card className="mt-5">
           <CardHeader className="flex-row items-center justify-between">
             <div>
