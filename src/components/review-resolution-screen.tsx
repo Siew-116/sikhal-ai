@@ -64,6 +64,7 @@ export function ReviewResolutionScreen({
   const [resolution, setResolution] = React.useState(initialResolution);
   const [approving, setApproving] = React.useState(false);
   const [executing, setExecuting] = React.useState(false);
+  const [reschedulingId, setReschedulingId] = React.useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   // Which draft is open for editing, and the working copy of its text.
@@ -81,6 +82,29 @@ export function ReviewResolutionScreen({
   const draftDirty = editingId !== null;
   const approvalBlocked = blockedSteps.length > 0 || draftDirty;
   const alreadyApproved = resolution.status === 'approved' || resolution.status === 'executed';
+
+  async function useSuggestedSlot(stepId: string) {
+    setReschedulingId(stepId);
+    setError(null);
+    try {
+      const response = await fetch(`/api/resolutions/${resolution.id}/reschedule`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stepId }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.resolution) {
+        setError(result.error ?? 'Unable to reschedule this action.');
+        return;
+      }
+      setResolution(result.resolution);
+      toast.success('Free slot selected. You can now review and approve the plan.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reschedule this action.');
+    } finally {
+      setReschedulingId(null);
+    }
+  }
 
   function beginEdit(draft: { customerId: string; body: string }) {
     setEditingId(draft.customerId);
@@ -242,7 +266,21 @@ export function ReviewResolutionScreen({
                 );
               })}
             </ul>
-            <p className="mt-2 font-medium">That slot is blocked. Choose another before approving.</p>
+            <p className="mt-2 font-medium">Choose a free slot to continue.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {blockedSteps.filter((step) => step.alternative).map((step) => (
+                <Button
+                  key={step.id}
+                  variant="outline"
+                  size="sm"
+                  disabled={reschedulingId !== null}
+                  onClick={() => useSuggestedSlot(step.id)}
+                >
+                  {reschedulingId === step.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
+                  Use {formatDayTime(step.alternative!.dayOfWeek, step.alternative!.startMinute, step.alternative!.endMinute)} for {step.label}
+                </Button>
+              ))}
+            </div>
           </Alert>
         )}
 
