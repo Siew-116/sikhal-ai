@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { notFound } from 'next/navigation';
 import { ReviewResolutionScreen } from '@/components/review-resolution-screen';
 import { getRepository } from '@/lib/repo/repository';
