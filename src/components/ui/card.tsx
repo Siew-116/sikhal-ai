@@ -8,14 +8,14 @@ import { cn } from '@/lib/utils';
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('rounded-md border border-border bg-surface', className)}
+      className={cn('rounded-xl border border-border bg-surface', className)}
       {...props}
     />
   );
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('flex flex-col gap-1 p-4 md:p-6', className)} {...props} />;
+  return <div className={cn('flex flex-col gap-1 p-5 md:p-7', className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
@@ -27,13 +27,13 @@ export function CardDescription({ className, ...props }: React.HTMLAttributes<HT
 }
 
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-4 pt-0 md:p-6 md:pt-0', className)} {...props} />;
+  return <div className={cn('p-5 pt-0 md:p-7 md:pt-0', className)} {...props} />;
 }
 
 export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('flex items-center gap-3 p-4 pt-0 md:p-6 md:pt-0', className)}
+      className={cn('flex items-center gap-3 p-5 pt-0 md:p-7 md:pt-0', className)}
       {...props}
     />
   );
