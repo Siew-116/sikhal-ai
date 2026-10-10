@@ -214,38 +214,46 @@ export function ReviewResolutionScreen({
           Back to new case
         </Link>
 
-        <section className="mt-7 border-b border-border-strong pb-7">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-semibold tracking-[0.07em] text-text-secondary">
-              RESOLUTION / {caseRecord.orderRef}
-            </p>
+        <section className="mt-8 border-y border-border-strong bg-[#E1E3D4] px-5 py-8 sm:px-8 lg:py-11">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <span className="sikhal-eyebrow">RESOLUTION / {caseRecord.orderRef}</span>
             <StatusPill status={resolution.status} />
           </div>
-          <h1 className="mt-3 text-[clamp(2rem,4vw,3rem)] font-semibold tracking-[-0.05em]">
-            Review before you approve.
-          </h1>
-          <p className="mt-2 text-sm text-text-secondary">
-            {caseRecord.supplierName} · {refundable.length} affected customer{refundable.length === 1 ? '' : 's'}
-          </p>
-          <div className="mt-7 flex flex-wrap items-end gap-x-12 gap-y-5">
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,.9fr)] lg:gap-12">
             <div>
-              <p className="text-xs font-medium text-text-secondary">TOTAL PROPOSED REFUND</p>
-              <p className="tabular mt-1 text-[clamp(2.3rem,5vw,3.5rem)] font-semibold leading-none tracking-[-0.055em] text-text-primary">
-                {formatMYR(resolution.totalRefundSen)}
+              <h1 className="sikhal-display text-[clamp(3.4rem,6vw,6rem)]">
+                CUT TO THE<br/><span className="text-accent">RESOLUTION.</span>
+              </h1>
+              <p className="mt-6 max-w-[450px] text-base leading-7 text-text-primary">
+                {caseRecord.supplierName} cancelled {caseRecord.orderRef}. Review the amounts, clear any class conflicts, then approve the proposed actions.
+              </p>
+              <p className="mt-5 font-mono text-[11px] leading-5 text-text-secondary">
+                PROPOSAL ONLY — NO AUTOMATIC REFUNDS OR CUSTOMER MESSAGES
               </p>
             </div>
-            <div className="pb-1">
-              <p className="text-xs font-medium text-text-secondary">CUSTOMERS</p>
-              <p className="tabular mt-1 text-2xl font-semibold text-text-primary">{refundable.length}</p>
-            </div>
-            <div className="pb-1">
-              <p className="text-xs font-medium text-text-secondary">SCHEDULE</p>
-              <p className="mt-1 text-sm font-semibold text-text-primary">
-                {blockedSteps.length > 0 ? `${blockedSteps.length} conflict to resolve` : 'No conflicts'}
-              </p>
+            <div className="border border-border-strong bg-[#F8F5EA]">
+              <div className="flex items-center justify-between border-b border-border-strong px-5 py-4">
+                <span className="sikhal-eyebrow">DECISION SUMMARY</span>
+                <span className="font-mono text-[11px] text-text-secondary">MYR / VERIFIED PAYMENTS</span>
+              </div>
+              <div className="px-5 py-7 sm:px-7">
+                <p className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">Proposed refund total</p>
+                <p className="tabular mt-3 text-[clamp(2.5rem,5vw,4.5rem)] font-bold leading-none tracking-[-0.065em] text-text-primary">
+                  {formatMYR(resolution.totalRefundSen)}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 border-t border-border-strong">
+                <div className="border-r border-border-strong p-5">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-text-secondary">Affected customers</p>
+                  <p className="tabular mt-2 text-3xl font-semibold">{refundable.length}</p>
+                </div>
+                <div className="p-5">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-text-secondary">Academic conflicts</p>
+                  <p className="tabular mt-2 text-3xl font-semibold">{blockedSteps.length}</p>
+                </div>
+              </div>
             </div>
           </div>
-          <p className="mt-5 text-xs text-text-muted">Proposal only. No money transferred and no messages sent.</p>
         </section>
 
         {/* ── ACADEMIC CONFLICT — the loudest element on the page ─────── */}
@@ -285,7 +293,7 @@ export function ReviewResolutionScreen({
                 );
               })}
             </ul>
-            <p className="mt-2 font-medium">Choose a free slot to continue.</p>
+            <p className="mt-3 font-mono text-[11px] font-semibold uppercase">Choose a free slot before approval.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {blockedSteps.filter((step) => step.alternative).map((step) => (
                 <Button
@@ -326,7 +334,7 @@ export function ReviewResolutionScreen({
           </Alert>
         )}
 
-        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <div className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
           {/* ── Refunds ───────────────────────────────────────────────── */}
           <Card>
             <CardHeader>
@@ -608,7 +616,7 @@ export function ReviewResolutionScreen({
         </Card>
 
         {/* ── Agent trace + commitments (transparency) ───────────────── */}
-        <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <div className="mt-10 grid gap-5 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-subheading">How this was worked out</CardTitle>
