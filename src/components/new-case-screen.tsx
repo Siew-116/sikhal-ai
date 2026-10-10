@@ -285,7 +285,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
               <p className="mt-5 max-w-[340px] text-sm leading-6 text-text-secondary">
                 Test SikHal with fictional payments, refund calculations, and an academic calendar conflict.
               </p>
-              <Button className="mt-8 w-full justify-between" onClick={loadSample} disabled={loadingSample || running}>
+              <Button className="mt-7 w-full justify-between bg-[#B43E2E] text-white hover:bg-[#922F22]" onClick={loadSample} disabled={loadingSample || running}>
                 {sampleLoaded ? 'Reload sample case' : 'Load sample case'}
                 {loadingSample ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
               </Button>
@@ -602,7 +602,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
               size="lg"
               onClick={runAgent}
               disabled={!requiredFilled || running}
-              className={cn('w-full sm:w-auto')}
+              className={cn('w-full sm:w-auto bg-[#B43E2E] text-white hover:bg-[#922F22]')}
             >
               {running ? (
                 <>
