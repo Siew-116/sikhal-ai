@@ -261,11 +261,11 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
       <AppHeader screenTitle="New Case" storageLabel={storageLabel} storageKind={storageKind} />
 
       <main className="sikhal-container py-6 md:py-10">
-        <section className="grid gap-10 border-b border-border-strong pb-12 pt-9 lg:grid-cols-[minmax(0,1fr)_minmax(320px,.86fr)] lg:items-stretch lg:gap-14">
-          <div className="flex flex-col justify-center">
-            <p className="sikhal-eyebrow mb-6">01 / THE PROBLEM — START HERE</p>
-            <h1 className="sikhal-display max-w-[700px] text-[clamp(3.6rem,7.5vw,7.2rem)]">
-              ORDER<br/>CANCELLED<span className="text-accent">.</span><br/>MOVE FORWARD.
+        <section className="grid gap-8 border-b border-border-strong pb-9 pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,.9fr)] lg:items-start lg:gap-10">
+          <div className="flex flex-col justify-start pt-3 lg:pt-8">
+            <p className="sikhal-eyebrow mb-5">01 / THE PROBLEM — START HERE</p>
+            <h1 className="sikhal-display max-w-[650px] text-[clamp(3rem,5vw,5rem)]">
+              ORDER <span className="text-accent">CANCELLED.</span><br/>MOVE FORWARD.
             </h1>
             <p className="mt-7 max-w-[520px] text-base leading-7 text-text-primary">
               Turn a supplier cancellation into a clear refund plan. Know who is owed what, avoid class-time clashes, and keep every decision on record.
@@ -279,13 +279,13 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
               <p className="sikhal-eyebrow">EXAMPLE CASE / 014</p>
               <span className="font-mono text-[11px] text-text-secondary">SARAWAK</span>
             </div>
-            <div className="flex flex-1 flex-col justify-center p-6 sm:p-9">
+            <div className="flex flex-1 flex-col justify-start p-6 sm:p-7">
               <p className="font-mono text-[11px] uppercase tracking-wider text-text-secondary">SIX CUSTOMERS. ONE CANCELLED ORDER.</p>
-              <h2 className="sikhal-display mt-6 text-[clamp(2.8rem,4vw,4.8rem)]">SEE THE<br/>RESOLUTION.</h2>
+              <h2 className="sikhal-display mt-4 text-[clamp(2rem,3vw,3rem)]">SEE THE <span className="text-accent">PLAN.</span></h2>
               <p className="mt-5 max-w-[340px] text-sm leading-6 text-text-secondary">
                 Test SikHal with fictional payments, refund calculations, and an academic calendar conflict.
               </p>
-              <Button className="mt-8 w-full justify-between" onClick={loadSample} disabled={loadingSample || running}>
+              <Button className="mt-7 w-full justify-between bg-[#B43E2E] text-white hover:bg-[#922F22]" onClick={loadSample} disabled={loadingSample || running}>
                 {sampleLoaded ? 'Reload sample case' : 'Load sample case'}
                 {loadingSample ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
               </Button>
@@ -296,7 +296,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
             </div>
           </aside>
         </section>
-        <div className="mb-6 mt-10 flex flex-wrap items-end justify-between gap-3">
+        <div className="sikhal-section-heading mb-6 mt-10 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="sikhal-eyebrow">01 — CASE DETAILS</p>
             <h2 className="mt-2 text-[clamp(1.8rem,3vw,2.7rem)] font-semibold tracking-[-0.045em]">What happened?</h2>
@@ -304,7 +304,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
           </div>
           {sampleLoaded && <Button variant="outline" size="sm" onClick={clearSample} disabled={running}>Clear example</Button>}
         </div>
-        <div className="max-w-[840px]">
+        <div className="max-w-full">
           {/* ── Case details ──────────────────────────────────────────── */}
           <Card>
             <CardHeader>
@@ -596,13 +596,13 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
         )}
 
         {/* ── Action bar ────────────────────────────────────────────── */}
-        <div className="sticky bottom-0 mt-6 border-t border-border bg-bg/95 py-4 backdrop-blur">
+        <div className="sikhal-action-bar mt-8 border-t border-border-strong bg-bg/95 py-4 lg:sticky lg:bottom-0 lg:z-30 lg:backdrop-blur">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               size="lg"
               onClick={runAgent}
               disabled={!requiredFilled || running}
-              className={cn('w-full sm:w-auto')}
+              className={cn('w-full sm:w-auto bg-[#B43E2E] text-white hover:bg-[#922F22]')}
             >
               {running ? (
                 <>
