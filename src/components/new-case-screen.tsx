@@ -261,23 +261,23 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
       <AppHeader screenTitle="New Case" storageLabel={storageLabel} storageKind={storageKind} />
 
       <main className="sikhal-container py-6 md:py-10">
-        <section className="mb-10 grid gap-8 border-b border-border-strong pb-9 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-end">
+        <section className="mb-12 grid gap-9 border-b border-border pb-12 pt-5 lg:grid-cols-[minmax(0,1fr)_310px] lg:items-center">
           <div>
-            <p className="mb-4 text-xs font-semibold tracking-[0.07em] text-text-secondary">SIKHAL / NEW CASE</p>
-            <h1 className="max-w-[650px] text-[clamp(2.15rem,4vw,3.5rem)] font-semibold leading-[1.12] tracking-[-0.055em] text-text-primary">
-              Resolve a cancelled order.
+            <p className="mb-4 text-xs font-semibold tracking-[0.07em] text-text-secondary">NEW CASE  /  01</p>
+            <h1 className="max-w-[670px] text-[clamp(2.5rem,5.4vw,4.7rem)] font-semibold leading-[1.06] tracking-[-0.065em] text-text-primary">
+              An easier way to handle a cancelled order.
             </h1>
             <p className="mt-4 max-w-[530px] text-[15px] leading-7 text-text-secondary">
-              Work out who is owed a refund, prepare the messages, and choose a time that works around class.
+              One place to reconcile customer payments, prepare a resolution, and protect your study time.
             </p>
-            <p className="mt-5 text-xs leading-5 text-text-muted">
+            <p className="mt-7 text-xs leading-5 text-text-muted">
               Refund amounts come from recorded payments. Nothing is sent or paid automatically.
             </p>
           </div>
-          <aside className="border-l-2 border-primary bg-[#F2F4EE] px-5 py-5">
-            <p className="text-xs font-semibold tracking-[0.06em] text-text-secondary">TRY A SAMPLE</p>
-            <h2 className="mt-2 text-lg font-semibold tracking-tight text-text-primary">Six customers. One cancellation.</h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">A fictional Sarawak group buy with recorded payments and a study-time conflict.</p>
+          <aside className="rounded-2xl border border-[#DCE6DD] bg-[#EEF4ED] p-6">
+            <p className="text-xs font-semibold tracking-[0.06em] text-text-secondary">QUICK START</p>
+            <h2 className="mt-2 text-lg font-semibold tracking-tight text-text-primary">Try a real workflow.</h2>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">Explore a sample group buy with six customers, verified payments and a timetable conflict.</p>
             <Button className="mt-5 w-full" onClick={loadSample} disabled={loadingSample || running}>
               {loadingSample ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
               {sampleLoaded ? 'Reset to sample' : 'Use sample case'}
@@ -287,7 +287,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
         </section>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-accent">01 — CASE DETAILS</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-accent">01 / CASE DETAILS</p>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">What happened?</h2>
             <p className="mt-1 text-sm text-text-secondary">Start with the supplier and order details.</p>
           </div>
@@ -359,7 +359,7 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
         </div>
 
         {/* ── Affected order records ────────────────────────────────── */}
-        <div className="mb-4 mt-10"><p className="text-xs font-semibold uppercase tracking-wider text-accent">02 — ORDER RECORDS</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Who paid for the cancelled items?</h2><p className="mt-1 text-sm text-text-secondary">Enter one row per cancelled order item.</p></div>
+        <div className="mb-4 mt-10"><p className="text-xs font-semibold uppercase tracking-wider text-accent">02 / ORDER RECORDS</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Who paid for the cancelled items?</h2><p className="mt-1 text-sm text-text-secondary">Enter one row per cancelled order item.</p></div>
         <Card className="mt-5">
           <CardHeader className="flex-row items-center justify-between">
             <div>
