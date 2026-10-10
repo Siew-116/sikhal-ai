@@ -405,8 +405,18 @@ async function draftMessages(
           generatedBy: 'ai',
         });
         continue;
-      } catch {
-        // Fall through to the deterministic draft rather than failing the run.
+      } catch (error) {
+        // Log only a sanitized provider failure category; never log prompts,
+        // customer information, response bodies, or API credentials.
+        const label = error instanceof Error ? error.message : '';
+        const code = /^LLM HTTP (401|403|404|429|400|500|502|503)$/.exec(label)?.[1];
+        const category = code ? `provider_http_${code}` :
+          label.includes('safety validation') ? 'output_validation_failed' :
+          label.includes('no message') ? 'empty_model_response' :
+          error instanceof Error && error.name === 'AbortError' ? 'provider_timeout' :
+          'provider_request_failed';
+        console.warn('[SikHal AI] Draft fallback:', category);
+        // Still use a safe template instead of breaking the financial workflow.
       }
     }
 
