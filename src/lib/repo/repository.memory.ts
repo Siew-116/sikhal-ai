@@ -178,6 +178,7 @@ export class MemoryRepository implements Repository {
     const updated: Resolution = {
       ...resolution,
       status: 'executed',
+      executedAt: new Date().toISOString(),
     };
     this.resolutions.set(resolutionId, updated);
     return updated;

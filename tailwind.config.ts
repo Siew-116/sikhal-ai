@@ -53,6 +53,18 @@ const config: Config = {
         sans: 'var(--font-sans)',
         mono: 'var(--font-mono)',
       },
+      fontSize: {
+        display: ['32px', { lineHeight: '40px', fontWeight: '600' }],
+        title: ['24px', { lineHeight: '32px', fontWeight: '600' }],
+        heading: ['20px', { lineHeight: '28px', fontWeight: '600' }],
+        subheading: ['16px', { lineHeight: '24px', fontWeight: '600' }],
+        body: ['16px', { lineHeight: '24px' }],
+        'body-sm': ['14px', { lineHeight: '20px' }],
+        label: ['14px', { lineHeight: '20px', fontWeight: '500' }],
+        caption: ['12px', { lineHeight: '16px', letterSpacing: '0.04em' }],
+        money: ['16px', { lineHeight: '24px', fontWeight: '600' }],
+        'money-lg': ['20px', { lineHeight: '28px', fontWeight: '600' }],
+      },
       maxWidth: {
         content: '1100px',
         prose: '68ch',

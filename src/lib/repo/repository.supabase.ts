@@ -51,6 +51,7 @@ interface ResolutionRow {
   warnings: string[];
   created_at: string;
   approved_at: string | null;
+  executed_at: string | null;
 }
 
 export class SupabaseRepository implements Repository {
@@ -420,6 +421,7 @@ export class SupabaseRepository implements Repository {
       warnings: row.warnings,
       createdAt: row.created_at,
       approvedAt: row.approved_at ?? undefined,
+      executedAt: row.executed_at ?? undefined,
     };
   }
 }

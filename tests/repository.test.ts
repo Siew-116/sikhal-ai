@@ -153,6 +153,48 @@ describe('T31/T32 — execution is compare-and-swap', () => {
     expect(second.id).toBe(first.id);
   });
 
+  // Regression: markExecuted originally flipped status to 'executed' without
+  // recording WHEN. The Supabase adapter wrote executed_at but mapResolution had
+  // no field to read it back into, so the timestamp was silently lost even in
+  // production. These two tests pin the behaviour in both directions.
+  it('records executedAt when a resolution is executed', async () => {
+    const c = await seedCase(repo);
+    const created = await repo.saveResolution(proposal(c.id));
+    await repo.approveResolution(created.id, OWNER, created.contentHash);
+
+    const executed = await repo.markExecuted(created.id);
+    expect(executed.status).toBe('executed');
+    expect(executed.executedAt).toBeDefined();
+    expect(Number.isNaN(Date.parse(executed.executedAt!))).toBe(false);
+
+    // The timestamp must survive a round-trip through storage, not just exist
+    // on the returned object.
+    const reloaded = await repo.getResolution(created.id);
+    expect(reloaded!.executedAt).toBe(executed.executedAt);
+  });
+
+  it('does not advance executedAt on a repeat execution', async () => {
+    const c = await seedCase(repo);
+    const created = await repo.saveResolution(proposal(c.id));
+    await repo.approveResolution(created.id, OWNER, created.contentHash);
+
+    const first = await repo.markExecuted(created.id);
+    await new Promise((r) => setTimeout(r, 5));
+    const second = await repo.markExecuted(created.id);
+
+    // A second execution attempt must not rewrite the original timestamp —
+    // otherwise the audit trail would claim the refunds ran later than they did.
+    expect(second.executedAt).toBe(first.executedAt);
+  });
+
+  it('leaves executedAt undefined for a merely approved resolution', async () => {
+    const c = await seedCase(repo);
+    const created = await repo.saveResolution(proposal(c.id));
+    const approved = await repo.approveResolution(created.id, OWNER, created.contentHash);
+    expect(approved.status).toBe('approved');
+    expect(approved.executedAt).toBeUndefined();
+  });
+
   it('T32 concurrent execution attempts cannot both succeed', async () => {
     const c = await seedCase(repo);
     const created = await repo.saveResolution(proposal(c.id));

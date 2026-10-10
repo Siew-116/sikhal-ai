@@ -84,6 +84,15 @@ export interface Resolution {
   warnings: string[];
   createdAt: string;
   approvedAt?: string;
+  /**
+   * When the resolution's financial action was actually executed.
+   *
+   * Set exactly once, by the compare-and-swap in markExecuted(). This is an
+   * audit-critical field: "the refunds were run" is a claim a seller may need
+   * to evidence to a customer, so it must be durably recorded, not inferred
+   * from status alone.
+   */
+  executedAt?: string;
 }
 
 export interface CaseRecord {
