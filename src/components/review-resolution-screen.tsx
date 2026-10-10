@@ -182,7 +182,7 @@ export function ReviewResolutionScreen({
         return;
       }
       setResolution(payload.resolution);
-      toast.success('Resolution marked complete. The audit trail has been updated.');
+      toast.success('Internal workflow recorded. No refunds were paid or messages sent.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not complete the resolution.');
     } finally {
@@ -650,8 +650,8 @@ export function ReviewResolutionScreen({
                 <ShieldCheck className="h-5 w-5" style={{ color: 'var(--success)' }} aria-hidden="true" />
                 <span className="text-body-sm font-medium text-text-primary">
                   {resolution.status === 'executed'
-                    ? 'This resolution is complete.'
-                    : 'Approved. Refunds and messages are staged.'}
+                    ? 'Internal workflow recorded — refunds and messages still need manual action.'
+                    : 'Approved. Refunds and customer messages are ready for manual handling.'}
                 </span>
               </div>
               {resolution.status === 'approved' && (
@@ -662,7 +662,7 @@ export function ReviewResolutionScreen({
                       Completing…
                     </>
                   ) : (
-                    'Mark resolution complete'
+                    'Record internal workflow as complete'
                   )}
                 </Button>
               )}
@@ -769,7 +769,7 @@ function StatusPill({ status }: { status: Resolution['status'] }) {
     draft: { label: 'Draft — awaiting approval', variant: 'warning' },
     approved: { label: 'Approved', variant: 'info' },
     executing: { label: 'Executing', variant: 'info' },
-    executed: { label: 'Complete', variant: 'success' },
+    executed: { label: 'Workflow recorded · not paid/sent', variant: 'info' },
     failed: { label: 'Failed', variant: 'danger' },
   };
   const { label, variant } = map[status];
