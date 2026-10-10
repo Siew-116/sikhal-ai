@@ -12,7 +12,7 @@ import { Input, Label, Textarea } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { AgentRunPanel } from '@/components/agent-run-panel';
-import { formatMYR, parseMYR, MoneyError } from '@/lib/core/money';
+import { formatMYR, formatMYRPlain, parseMYR, MoneyError } from '@/lib/core/money';
 import { DEMO_CASE } from '@/lib/fixtures';
 import { cn } from '@/lib/utils';
 
@@ -108,7 +108,9 @@ export function NewCaseScreen({ storageLabel, storageKind }: { storageLabel?: st
             customerName: line.customerName,
             itemName: line.itemName,
             quantity: String(line.quantity),
-            paid: ((payment?.amountSen ?? 0) / 100).toFixed(2),
+            // formatMYRPlain is integer-only and round-trips through parseMYR.
+            // Never use (sen / 100).toFixed(2) — that puts a float in the money path.
+            paid: formatMYRPlain(payment?.amountSen ?? 0),
             status: payment?.status ?? 'paid',
           };
         }),

@@ -17,10 +17,18 @@
  * If the hash at execution time does not match the hash that was approved, the
  * action fails closed. The founder must re-approve.
  *
+ * CRITICAL IMPLEMENTATION RULE — the hash must be computed from the SAME
+ * canonical function at all three call sites (propose, approve, execute).
+ * Passing a stored hash as the "current" hash makes the comparison a tautology,
+ * which silently disables the entire defence. `proposalHashOf` exists to be the
+ * single source of truth for that computation; callers must use it rather than
+ * building the hash input inline.
+ *
  * This module is pure: no I/O, no dependencies on the clock.
  */
 
 import { assertSen, type Sen } from './money';
+import { sha256Hex } from './sha256';
 
 export type ResolutionStatus =
   | 'draft'
@@ -167,22 +175,40 @@ export function linesAreSafeToExecute(
 /**
  * Compute a stable content hash for a proposal.
  *
- * This is a small, dependency-free FNV-1a hash over a canonical JSON
- * serialisation. It does not need to be cryptographically strong — it needs to
- * be stable and to change whenever the proposal changes. Using a tiny local
- * implementation keeps the pure core free of dependencies and keeps this
- * module testable without credentials.
+ * Uses SHA-256 over a canonical JSON serialisation. Earlier versions used a
+ * 32-bit FNV-1a hash; that was the wrong primitive for an integrity control,
+ * because a 2^32 output space is collidable and a collision would let a
+ * different proposal satisfy an approval. SHA-256 makes that infeasible.
  *
- * Note: object keys are sorted so that key ordering never affects the hash.
+ * Object keys are sorted so key ordering never affects the digest.
  */
 export function hashProposal(input: unknown): string {
-  const canonical = canonicalise(input);
-  let hash = 0x811c9dc5; // FNV-1a 32-bit offset basis
-  for (let i = 0; i < canonical.length; i++) {
-    hash ^= canonical.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193); // FNV prime
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
+  return sha256Hex(canonicalise(input));
+}
+
+/**
+ * The canonical hash input for a resolution proposal.
+ *
+ * This is the SINGLE source of truth for what "the approved content" means.
+ * Every call site that hashes a proposal — when the agent proposes it, when the
+ * founder approves it, and when we verify it before executing — must go through
+ * this function. If the three sites ever disagree about the shape of the input,
+ * approval either silently fails every time or, worse, silently succeeds against
+ * content that was never reviewed.
+ *
+ * Keep this shape minimal and stable: the amount each customer is refunded, and
+ * the total. Formatting, drafts and wording are deliberately excluded — a
+ * typo fix in a message template must not invalidate an approved refund.
+ */
+export function proposalHashOf(input: {
+  totalRefundSen: Sen;
+  affected: ReadonlyArray<{ customerId: string; refundSen: Sen }>;
+}): string {
+  const affected = [...input.affected]
+    .map((a) => ({ id: a.customerId, amount: a.refundSen }))
+    // Sort by customer id so the digest does not depend on row order.
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return hashProposal({ total: input.totalRefundSen, affected });
 }
 
 function canonicalise(value: unknown): string {

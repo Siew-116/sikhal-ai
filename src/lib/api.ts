@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { ApprovalError, PersistenceError } from '@/lib/repo/errors';
+import { ApprovalError, PersistenceError, IntegrityError } from '@/lib/repo/errors';
 import { PipelineError } from '@/lib/tools/pipeline';
 
 export function ok<T>(data: T, init?: number) {
@@ -26,6 +26,11 @@ export function fail(message: string, status = 400, detail?: unknown) {
  */
 export function handleError(error: unknown) {
   if (error instanceof ApprovalError) {
+    return fail(error.message, 409);
+  }
+  // A data-integrity refusal is a conflict with existing state, not a server
+  // fault. 409 is also the honest signal to a client: do NOT retry this.
+  if (error instanceof IntegrityError) {
     return fail(error.message, 409);
   }
   if (error instanceof PersistenceError) {

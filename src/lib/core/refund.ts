@@ -155,12 +155,20 @@ export function allocateRefund(
   let leftover = totalRefundSen - allocated;
   assertSen(leftover, 'leftover');
 
-  // ── Step 3 & 4: distribute leftover by largest remainder, tie-break on id ──
-  // Sorting is total and stable: primary key is the remainder descending,
-  // secondary key is customerId ascending. Two runs on identical input
-  // therefore always produce identical output.
+  // ── Step 3 & 4: distribute leftover by largest remainder ──────────────
+  // Sorting is total and stable. Tie-break order per the finance spec §1.4:
+  //   1. remainder descending  (largest fractional claim first)
+  //   2. weight descending     (larger payer before smaller, so a tie is
+  //                             settled in favour of the bigger stake)
+  //   3. customerId ascending  (final deterministic disambiguator)
+  // A fully specified comparator matters because Array.prototype.sort is only
+  // stable for elements that compare EQUAL — without a total order, two runs
+  // could disagree and the same input would produce different refunds.
   const byRemainder = [...scored].sort((a, b) => {
     if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+    if (b.customer.paidSen !== a.customer.paidSen) {
+      return b.customer.paidSen - a.customer.paidSen;
+    }
     return a.customer.customerId < b.customer.customerId ? -1 : 1;
   });
 

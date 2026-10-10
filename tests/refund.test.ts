@@ -119,6 +119,58 @@ describe('invariant A4 — determinism', () => {
     expect(byId.get('CUST-003')).toBe(33);
   });
 
+  it('T18b exact weights divide cleanly with no leftover to allocate', () => {
+    // Not a tie case — recorded to pin down the clean-division path so a future
+    // change to the comparator cannot silently start redistributing a sen.
+    const input = [
+      { customerId: 'ZZZ-heavy', customerName: 'Heavy', paidSen: 200 },
+      { customerId: 'AAA-light', customerName: 'Light', paidSen: 100 },
+    ];
+    const result = allocateRefund(input, 150);
+    const byId = new Map(result.lines.map((l) => [l.customerId, l.amountSen]));
+    expect(byId.get('ZZZ-heavy')).toBe(100);
+    expect(byId.get('AAA-light')).toBe(50);
+  });
+
+  it('T18c larger remainder wins regardless of weight, and conservation holds', () => {
+    // paid 300 and 200, pool 251:
+    //   300/500*251 = 150.6 -> floor 150, remainder 3
+    //   200/500*251 = 100.4 -> floor 100, remainder 2
+    // The heavier payer also has the larger remainder, so remainder decides.
+    const input = [
+      { customerId: 'ZZZ-heavy', customerName: 'Heavy', paidSen: 300 },
+      { customerId: 'AAA-light', customerName: 'Light', paidSen: 200 },
+    ];
+    const result = allocateRefund(input, 251);
+    const byId = new Map(result.lines.map((l) => [l.customerId, l.amountSen]));
+    expect(byId.get('ZZZ-heavy')).toBe(151);
+    expect(byId.get('AAA-light')).toBe(100);
+    // Conservation holds regardless of who wins the tie.
+    expect((byId.get('ZZZ-heavy') ?? 0) + (byId.get('AAA-light') ?? 0)).toBe(251);
+  });
+
+  it('the tie-break is fully deterministic across shuffled input', () => {
+    // Whatever the comparator decides, it must decide the SAME thing no matter
+    // what order the customers arrive in. This is what A4 requires.
+    const base = [
+      { customerId: 'Z', customerName: 'Z', paidSen: 300 },
+      { customerId: 'A', customerName: 'A', paidSen: 200 },
+      { customerId: 'M', customerName: 'M', paidSen: 100 },
+    ];
+    const reference = allocateRefund(base, 501);
+    const refById = new Map(reference.lines.map((l) => [l.customerId, l.amountSen]));
+
+    for (const permutation of [
+      [base[1], base[2], base[0]],
+      [base[2], base[0], base[1]],
+      [base[2], base[1], base[0]],
+    ]) {
+      const result = allocateRefund(permutation, 501);
+      const byId = new Map(result.lines.map((l) => [l.customerId, l.amountSen]));
+      expect(byId).toEqual(refById);
+    }
+  });
+
   it('result is identical regardless of input ordering', () => {
     const ordered = [
       { customerId: 'A', customerName: 'A', paidSen: 5000 },

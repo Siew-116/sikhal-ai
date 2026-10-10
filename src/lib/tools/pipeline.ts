@@ -28,6 +28,7 @@
 
 import { assertNonNegativeSen, formatMYR, sumSen, type Sen } from '@/lib/core/money';
 import { allocateRefund, type RefundInput } from '@/lib/core/refund';
+import { refundKey } from '@/lib/core/refundkey';
 import {
   detectConflicts,
   findAlternativeSlot,
@@ -158,6 +159,52 @@ interface NormalisedCase {
   payments: FixturePayment[];
 }
 
+/** Business facts needed to derive a stable refund key for a customer. */
+interface RefundKeyContext {
+  orderRef: string;
+  supplierUpdateId: string;
+  /** The cancelled lines each customer is owed a refund for, keyed by customer. */
+  linesByCustomer: Map<string, Array<{ itemName: string; quantity: number; unitPriceSen: Sen }>>;
+}
+
+/** Group the cancelled lines by customer, for refund-key derivation. */
+function groupCancelledLinesByCustomer(
+  lines: FixtureOrderLine[],
+): Map<string, Array<{ itemName: string; quantity: number; unitPriceSen: Sen }>> {
+  const grouped = new Map<
+    string,
+    Array<{ itemName: string; quantity: number; unitPriceSen: Sen }>
+  >();
+  for (const line of lines) {
+    if (!line.isCancelled) continue;
+    const list = grouped.get(line.customerId) ?? [];
+    list.push({
+      itemName: line.itemName,
+      quantity: line.quantity,
+      unitPriceSen: line.unitPriceSen,
+    });
+    grouped.set(line.customerId, list);
+  }
+  return grouped;
+}
+
+/**
+ * Derive the deterministic refund key for one customer.
+ *
+ * Returns undefined when the customer has no cancelled lines in this context —
+ * there is nothing to key on, so there is nothing to deduplicate.
+ */
+function refundKeyFor(customerId: string, ctx: RefundKeyContext): string | undefined {
+  const lines = ctx.linesByCustomer.get(customerId);
+  if (!lines || lines.length === 0) return undefined;
+  return refundKey({
+    orderRef: ctx.orderRef,
+    customerId,
+    supplierUpdateId: ctx.supplierUpdateId,
+    lines,
+  });
+}
+
 /**
  * TOOL 2 — matchAffectedCustomers (PURE).
  *
@@ -257,7 +304,10 @@ function matchAffectedCustomers(input: NormalisedCase): {
  * Returns the affected customers with their refund amounts filled in, plus any
  * warnings raised by the guards.
  */
-function calculateRefunds(affected: AffectedCustomer[]): {
+function calculateRefunds(
+  affected: AffectedCustomer[],
+  keyContext: RefundKeyContext,
+): {
   output: { affected: AffectedCustomer[]; totalRefundSen: Sen; warnings: string[] };
   summary: string;
 } {
@@ -298,7 +348,12 @@ function calculateRefunds(affected: AffectedCustomer[]): {
   const byId = new Map(allocation.lines.map((l) => [l.customerId, l]));
   const updated = affected.map((a) => {
     const line = byId.get(a.customerId);
-    return line ? { ...a, refundSen: line.amountSen } : { ...a, refundSen: 0 };
+    // Attach the deterministic refund key so the persistence layer can refuse a
+    // duplicate refund for the same customer in a later resolution.
+    const refundKey = refundKeyFor(a.customerId, keyContext);
+    return line
+      ? { ...a, refundSen: line.amountSen, refundKey }
+      : { ...a, refundSen: 0, refundKey };
   });
 
   if (nonRefundable.length > 0) {
@@ -528,8 +583,20 @@ export async function runResolutionPipeline(input: PipelineInput): Promise<Pipel
   if (match.entry.status === 'error') throw new PipelineError(match.entry.error!, trace);
 
   // 3. calculateRefunds
+  //
+  // The refund key context is derived from the case's own business facts, not
+  // from anything that varies between runs. `supplierUpdateId` must be stable
+  // across re-runs of the same cancellation — using the cancellation date plus
+  // the supplier name achieves that, whereas a resolution id or timestamp would
+  // make every run look like a new event and defeat the duplicate guard.
+  const keyContext: RefundKeyContext = {
+    orderRef: extract.output.orderRef,
+    supplierUpdateId: `${extract.output.supplierName}|${extract.output.cancelledOn}`,
+    linesByCustomer: groupCancelledLinesByCustomer(extract.output.orderLines),
+  };
+
   const refunds = await runTool('calculateRefunds', 'Computing refunds in MYR', () =>
-    calculateRefunds(match.output),
+    calculateRefunds(match.output, keyContext),
   );
   trace.push(refunds.entry);
   if (refunds.entry.status === 'error') throw new PipelineError(refunds.entry.error!, trace);

@@ -180,47 +180,71 @@ export class SupabaseRepository implements Repository {
       );
     }
 
-    const payload = {
-      case_id: input.caseId,
-      status: 'draft' as const,
-      total_refund_sen: input.totalRefundSen,
-      content_hash: input.contentHash,
-      affected: input.affected,
-      drafts: input.drafts,
-      plan: input.plan,
-      conflicts: input.conflicts,
-      tool_trace: input.toolTrace,
-      warnings: input.warnings,
-    };
+    // ── Atomic write ───────────────────────────────────────────────────────
+    //
+    // The resolution and its refund lines are written by a single plpgsql
+    // function so they commit or roll back together. Writing them as two
+    // separate round-trips is NOT atomic: if the line insert failed, the
+    // resolution row was already committed — an orphaned proposal with a
+    // non-zero total and no per-customer lines, which could later be approved
+    // and "executed" while no refund lines exist.
+    //
+    // The function also enforces, in the database:
+    //   * Σ(amount_sen) === p_total_refund_sen
+    //   * Σ(paid_sen) <= total collected for the case
+    //   * no duplicate customer in the batch
+    //   * the cross-resolution refund_key duplicate guard
+    //
+    // `p_affected`/`p_drafts`/... are the JSON blobs for the resolution row;
+    // `p_lines` carries the money, including the deterministic refund_key.
+    const lines = input.affected.map((a) => ({
+      order_id: input.orderRef ?? null,
+      customer_id: a.customerId,
+      customer_name: a.customerName,
+      amount_sen: a.refundSen,
+      paid_sen: a.paidSen,
+      refund_key: a.refundKey ?? null,
+      supplier_update_id: input.supplierUpdateId ?? null,
+    }));
 
-    // Upsert on the case: one resolution per case while in draft.
-    const { data, error } = existing
-      ? await this.client.from('resolutions').update(payload).eq('id', existing.id).select().single()
-      : await this.client.from('resolutions').insert(payload).select().single();
-
-    if (error) throw new PersistenceError(`Failed to save resolution: ${error.message}`);
-    const resolution = this.mapResolution(data as ResolutionRow);
-
-    // Refund lines are written with the unique (resolution_id, customer_id)
-    // constraint enforcing duplicate prevention at the database level.
-    if (input.affected.length > 0) {
-      const { error: lineError } = await this.client.from('refund_lines').upsert(
-        input.affected.map((a) => ({
-          resolution_id: resolution.id,
-          customer_id: a.customerId,
-          customer_name: a.customerName,
-          amount_sen: a.refundSen,
-          paid_sen: a.paidSen,
-          status: 'proposed',
-        })),
-        { onConflict: 'resolution_id,customer_id' },
-      );
-      if (lineError) {
-        throw new PersistenceError(`Failed to save refund lines: ${lineError.message}`);
+    // A re-run replaces the existing draft. Delete the old draft first so the
+    // unique indexes do not reject the re-insert; the function then writes the
+    // replacement atomically.
+    if (existing) {
+      const { error: delError } = await this.client
+        .from('resolutions')
+        .delete()
+        .eq('id', existing.id)
+        .eq('status', 'draft');
+      if (delError) {
+        throw new PersistenceError(`Failed to clear the previous draft: ${delError.message}`);
       }
     }
 
-    return resolution;
+    const { data: newId, error } = await this.client.rpc('write_resolution_atomic', {
+      p_case_id: input.caseId,
+      p_content_hash: input.contentHash,
+      p_total_refund_sen: input.totalRefundSen,
+      p_affected: input.affected,
+      p_drafts: input.drafts,
+      p_plan: input.plan,
+      p_conflicts: input.conflicts,
+      p_tool_trace: input.toolTrace,
+      p_warnings: input.warnings,
+      p_lines: lines,
+    });
+
+    if (error) {
+      // Surface the database's own integrity message rather than a generic one;
+      // "refund lines sum to X but the resolution total is Y" is actionable.
+      throw new PersistenceError(`Failed to save resolution: ${error.message}`);
+    }
+
+    const saved = await this.getResolution(newId as string);
+    if (!saved) {
+      throw new PersistenceError('Resolution was written but could not be read back.');
+    }
+    return saved;
   }
 
   async getResolution(resolutionId: string): Promise<Resolution | null> {
@@ -296,8 +320,16 @@ export class SupabaseRepository implements Repository {
     if (error) throw new PersistenceError(`Failed to execute resolution: ${error.message}`);
 
     if (!data) {
+      // The CAS matched no row. Either the resolution was already executed (a
+      // double-click) or it is not approved. Both are refusals, and both must
+      // throw the SAME error the memory adapter throws, so the two adapters
+      // cannot diverge on the money path.
       const current = await this.getResolution(resolutionId);
-      if (current?.status === 'executed') return current; // idempotent double-click
+      if (current?.status === 'executed') {
+        throw new ApprovalError(
+          'Cannot execute: This resolution has already been executed.',
+        );
+      }
       throw new ApprovalError(
         `Refusing to execute: resolution is "${current?.status ?? 'missing'}", not approved.`,
       );

@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Lock,
   Copy,
+  Pencil,
   ArrowLeft,
   Loader2,
   ShieldCheck,
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
+import { Label, Textarea } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -64,14 +66,56 @@ export function ReviewResolutionScreen({
   const [executing, setExecuting] = React.useState(false);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // Which draft is open for editing, and the working copy of its text.
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [editText, setEditText] = React.useState('');
 
   const refundable = resolution.affected.filter((a) => a.status === 'refundable');
   const noPayment = resolution.affected.filter((a) => a.status === 'no_payment');
 
-  // Approval is blocked while any scheduled action still sits on a blocked slot.
+  // Approval is blocked while any scheduled action still sits on a blocked slot,
+  // and while a draft edit is unsaved. An unsaved edit means the text on screen
+  // is not the text that would be sent, so approving it would approve a
+  // proposal the founder has not actually seen.
   const blockedSteps = resolution.plan.filter((s) => s.blocked);
-  const approvalBlocked = blockedSteps.length > 0;
+  const draftDirty = editingId !== null;
+  const approvalBlocked = blockedSteps.length > 0 || draftDirty;
   const alreadyApproved = resolution.status === 'approved' || resolution.status === 'executed';
+
+  function beginEdit(draft: { customerId: string; body: string }) {
+    setEditingId(draft.customerId);
+    setEditText(draft.body);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditText('');
+  }
+
+  /**
+   * Save an edited draft.
+   *
+   * The edit is local to this review session by design. The message body is NOT
+   * part of the approval content hash (which covers only the refund amounts and
+   * total), so editing wording must not silently invalidate an approval of the
+   * money. If the resolution is already approved, we refuse the edit outright
+   * rather than let the founder change staged text behind an approval.
+   */
+  function saveEdit(customerId: string) {
+    if (alreadyApproved) {
+      toast.error('This resolution is already approved. Reopen the case to change messages.');
+      return;
+    }
+    setResolution((prev) => ({
+      ...prev,
+      drafts: prev.drafts.map((d) =>
+        d.customerId === customerId ? { ...d, body: editText } : d,
+      ),
+    }));
+    setEditingId(null);
+    setEditText('');
+    toast.success('Message updated.');
+  }
 
   async function approve() {
     setApproving(true);
@@ -418,30 +462,83 @@ export function ReviewResolutionScreen({
                 This happens when there are no refundable customers.
               </Alert>
             ) : (
-              resolution.drafts.map((draft) => (
-                <div key={draft.customerId} className="rounded-md border border-border p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-body-sm font-medium text-text-primary">
-                        {draft.customerName}
-                      </span>
-                      <Badge variant={draft.generatedBy === 'ai' ? 'info' : 'neutral'}>
-                        {draft.generatedBy === 'ai' ? 'AI drafted' : 'Template'}
-                      </Badge>
+              resolution.drafts.map((draft) => {
+                const isEditing = editingId === draft.customerId;
+                return (
+                  <div key={draft.customerId} className="rounded-md border border-border p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-body-sm font-medium text-text-primary">
+                          {draft.customerName}
+                        </span>
+                        <Badge variant={draft.generatedBy === 'ai' ? 'info' : 'neutral'}>
+                          {draft.generatedBy === 'ai' ? 'AI drafted' : 'Template'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isEditing ? (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={cancelEdit}>
+                              Cancel
+                            </Button>
+                            <Button size="sm" onClick={() => saveEdit(draft.customerId)}>
+                              Save
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => beginEdit(draft)}
+                              disabled={alreadyApproved}
+                              // Explain the refusal inline; a disabled control
+                              // with no reason reads as a broken app.
+                              title={
+                                alreadyApproved
+                                  ? 'This resolution is already approved.'
+                                  : undefined
+                              }
+                            >
+                              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyDraft(draft.body)}
+                            >
+                              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                              Copy
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => copyDraft(draft.body)}>
-                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                      Copy
-                    </Button>
+                    {isEditing ? (
+                      <div className="mt-3">
+                        <Label htmlFor={`draft-${draft.customerId}`} className="sr-only">
+                          Message for {draft.customerName}
+                        </Label>
+                        <Textarea
+                          id={`draft-${draft.customerId}`}
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          rows={6}
+                          className="max-w-prose text-body-sm"
+                        />
+                      </div>
+                    ) : (
+                      <p
+                        className="mt-3 max-w-prose whitespace-pre-wrap rounded-sm p-3 text-body-sm text-text-primary"
+                        style={{ background: 'var(--surface-sunken)' }}
+                      >
+                        {draft.body}
+                      </p>
+                    )}
                   </div>
-                  <p
-                    className="mt-3 max-w-prose whitespace-pre-wrap rounded-sm p-3 text-body-sm text-text-primary"
-                    style={{ background: 'var(--surface-sunken)' }}
-                  >
-                    {draft.body}
-                  </p>
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -536,7 +633,17 @@ export function ReviewResolutionScreen({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <AlertDialogTrigger asChild>
-                  <Button size="lg" disabled={approvalBlocked} className="w-full sm:w-auto">
+                  <Button
+                    size="lg"
+                    disabled={approvalBlocked}
+                    className="w-full sm:w-auto"
+                    // Tie the refusal reason to the control. A disabled button is
+                    // not focusable, so without this a keyboard or screen-reader
+                    // user reaches the control, finds it inert, and is told
+                    // nothing about why. The reason is visible text; describedby
+                    // makes it the button's accessible description too.
+                    aria-describedby="approve-blocked-reason"
+                  >
                     <Lock className="h-4 w-4" aria-hidden="true" />
                     Approve &amp; prepare resolution
                   </Button>
@@ -593,17 +700,23 @@ export function ReviewResolutionScreen({
               </AlertDialog>
 
               <p
+                id="approve-blocked-reason"
+                // Announced when it appears so a screen-reader user learns the
+                // gate closed without having to hunt for the reason.
+                role={approvalBlocked ? 'status' : undefined}
                 className={cn(
                   'text-caption sm:text-right',
                   approvalBlocked ? 'text-danger' : 'text-text-muted',
                 )}
                 style={approvalBlocked ? { color: 'var(--danger)' } : undefined}
               >
-                {approvalBlocked
-                  ? `Blocked: ${blockedSteps.length} action${
-                      blockedSteps.length === 1 ? ' is' : 's are'
-                    } scheduled during your classes. Resolve to approve.`
-                  : 'Nothing is sent or refunded until you approve.'}
+                {draftDirty
+                  ? 'You have an unsaved message edit. Save or cancel it before approving.'
+                  : approvalBlocked
+                    ? `Blocked: ${blockedSteps.length} action${
+                        blockedSteps.length === 1 ? ' is' : 's are'
+                      } scheduled during your classes. Resolve to approve.`
+                    : 'Nothing is sent or refunded until you approve.'}
               </p>
             </div>
           )}

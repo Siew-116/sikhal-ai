@@ -1,5 +1,5 @@
 import { getRepository } from '@/lib/repo/repository';
-import { canExecute, hashProposal } from '@/lib/core/approval';
+import { canExecute, proposalHashOf } from '@/lib/core/approval';
 import { linesAreSafeToExecute } from '@/lib/core/approval';
 import { ok, handleError, fail } from '@/lib/api';
 
@@ -45,9 +45,13 @@ export async function POST(
 
     // Recompute the hash from stored content and compare. If the client's hash
     // disagrees with what is actually stored, something changed underneath.
-    const recomputed = hashProposal({
-      total: resolution.totalRefundSen,
-      affected: resolution.affected.map((a) => ({ id: a.customerId, amount: a.refundSen })),
+    // Uses the same canonical function as the propose and execute paths.
+    const recomputed = proposalHashOf({
+      totalRefundSen: resolution.totalRefundSen,
+      affected: resolution.affected.map((a) => ({
+        customerId: a.customerId,
+        refundSen: a.refundSen,
+      })),
     });
     if (recomputed !== contentHash) {
       return fail(
@@ -99,6 +103,21 @@ export async function PUT(
     const resolution = await repo.getResolution(id);
     if (!resolution) return fail('Resolution not found.', 404);
 
+    // Recompute the hash from the content that is ACTUALLY STORED right now.
+    //
+    // This must not be `resolution.contentHash`. Passing the stored hash as both
+    // the approved hash and the current hash makes the comparison below a
+    // tautology (x === x), which silently disables the entire tamper defence:
+    // an approved proposal could be mutated after approval and still execute.
+    // Recomputing from live content is what makes the check real.
+    const currentContentHash = proposalHashOf({
+      totalRefundSen: resolution.totalRefundSen,
+      affected: resolution.affected.map((a) => ({
+        customerId: a.customerId,
+        refundSen: a.refundSen,
+      })),
+    });
+
     const decision = canExecute(
       resolution.status,
       resolution.approvedAt
@@ -106,10 +125,13 @@ export async function PUT(
             resolutionId: resolution.id,
             approvedAt: resolution.approvedAt,
             approvedBy: 'founder',
+            // The hash the founder actually approved — the one stored at
+            // approval time.
             contentHash: resolution.contentHash,
           }
         : null,
-      resolution.contentHash,
+      // The hash of what we are about to execute.
+      currentContentHash,
     );
 
     if (!decision.allowed) {

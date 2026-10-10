@@ -11,6 +11,7 @@ import {
   canApprove,
   linesAreSafeToExecute,
   hashProposal,
+  proposalHashOf,
   type Approval,
 } from '@/lib/core/approval';
 
@@ -141,7 +142,120 @@ describe('hashProposal — binds approval to content', () => {
     expect(hashProposal(before)).not.toBe(hashProposal(after));
   });
 
-  it('produces an 8-character hex string', () => {
-    expect(hashProposal({ any: 'thing' })).toMatch(/^[0-9a-f]{8}$/);
+  it('produces a 64-character SHA-256 hex string', () => {
+    // Deliberately stronger than the previous 8-character assertion. A 32-bit
+    // digest is collidable, and a collision here would let a different proposal
+    // satisfy an approval — the exact failure this control exists to prevent.
+    expect(hashProposal({ any: 'thing' })).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe('proposalHashOf — the single canonical hash source', () => {
+  const base = {
+    totalRefundSen: 42840,
+    affected: [
+      { customerId: 'CUST-001', refundSen: 8400 },
+      { customerId: 'CUST-002', refundSen: 4250 },
+    ],
+  };
+
+  it('is stable regardless of the order the customers arrive in', () => {
+    const reversed = { ...base, affected: [...base.affected].reverse() };
+    expect(proposalHashOf(base)).toBe(proposalHashOf(reversed));
+  });
+
+  it('changes when an amount changes', () => {
+    const changed = {
+      ...base,
+      affected: [
+        { customerId: 'CUST-001', refundSen: 8401 },
+        { customerId: 'CUST-002', refundSen: 4250 },
+      ],
+    };
+    expect(proposalHashOf(changed)).not.toBe(proposalHashOf(base));
+  });
+
+  it('changes when the total changes even if the lines do not', () => {
+    expect(proposalHashOf({ ...base, totalRefundSen: 42841 })).not.toBe(proposalHashOf(base));
+  });
+});
+
+describe('the tamper defence is not a tautology', () => {
+  // REGRESSION for the defect this review found.
+  //
+  // The execute route previously passed `resolution.contentHash` as BOTH the
+  // approved hash and the "current" hash, so the comparison compared a value to
+  // itself and could never fail. These tests reproduce the shape of that bug
+  // directly: approve one proposal, then ask whether a DIFFERENT proposal may
+  // execute against that approval.
+  const approvedContent = {
+    totalRefundSen: 42840,
+    affected: [
+      { customerId: 'CUST-001', refundSen: 8400 },
+      { customerId: 'CUST-002', refundSen: 4250 },
+    ],
+  };
+
+  const approvedHash = proposalHashOf(approvedContent);
+
+  const approval: Approval = {
+    resolutionId: 'RES-TAMPER',
+    approvedAt: '2026-01-01T00:00:00.000Z',
+    approvedBy: 'founder',
+    contentHash: approvedHash,
+  };
+
+  it('permits execution when the content is unchanged', () => {
+    // Same content -> same hash -> allowed. This is the happy path.
+    const current = proposalHashOf(approvedContent);
+    const decision = canExecute('approved', approval, current);
+    expect(decision.allowed).toBe(true);
+  });
+
+  it('refuses execution when a refund amount was mutated after approval', () => {
+    // The founder approved RM42.50 for CUST-002; someone changed it to RM400.
+    const tampered = proposalHashOf({
+      ...approvedContent,
+      affected: [
+        { customerId: 'CUST-001', refundSen: 8400 },
+        { customerId: 'CUST-002', refundSen: 40000 },
+      ],
+    });
+
+    const decision = canExecute('approved', approval, tampered);
+    expect(decision.allowed).toBe(false);
+    expect(decision.reason).toMatch(/changed since it was approved/i);
+  });
+
+  it('refuses execution when a customer was added after approval', () => {
+    const tampered = proposalHashOf({
+      ...approvedContent,
+      affected: [
+        ...approvedContent.affected,
+        { customerId: 'CUST-999', refundSen: 9999 },
+      ],
+    });
+    expect(canExecute('approved', approval, tampered).allowed).toBe(false);
+  });
+
+  it('refuses execution when the total was inflated after approval', () => {
+    const tampered = proposalHashOf({ ...approvedContent, totalRefundSen: 99999 });
+    expect(canExecute('approved', approval, tampered).allowed).toBe(false);
+  });
+
+  it('would have passed the old tautological check — proving the test is meaningful', () => {
+    // Simulate the old bug: pass the stored hash as the "current" hash.
+    // This must be allowed (which is precisely why the bug was invisible), so
+    // the assertion documents that the new tests above are catching something
+    // the old call shape could not.
+    const tautological = canExecute('approved', approval, approval.contentHash);
+    expect(tautological.allowed).toBe(true);
+
+    // And the correct computation for modified content must disagree.
+    const correct = proposalHashOf({
+      ...approvedContent,
+      affected: [{ customerId: 'CUST-001', refundSen: 999999 }],
+    });
+    expect(canExecute('approved', approval, correct).allowed).toBe(false);
   });
 });

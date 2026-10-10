@@ -91,6 +91,26 @@ export function formatMYR(sen: Sen): string {
   return `${negative ? '-' : ''}RM${grouped}.${frac.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Format sen as a plain decimal string with no symbol and no grouping, e.g.
+ * `1234.56`.
+ *
+ * This is the form that belongs in an editable money input: it round-trips
+ * exactly through parseMYR, whereas `formatMYR`'s symbol and thousands
+ * separators would have to be stripped before parsing. Used instead of
+ * `(sen / 100).toFixed(2)`, which introduces a float into the money path.
+ *
+ * Integer arithmetic only — no division, so no float can appear.
+ */
+export function formatMYRPlain(sen: Sen): string {
+  assertSen(sen, 'formatMYRPlain argument');
+  const negative = sen < 0;
+  const abs = Math.abs(sen);
+  const whole = Math.floor(abs / 100);
+  const frac = abs % 100;
+  return `${negative ? '-' : ''}${whole}.${frac.toString().padStart(2, '0')}`;
+}
+
 /** Sum a list of sen amounts, asserting integer safety at each step. */
 export function sumSen(values: Sen[]): Sen {
   let total = 0;

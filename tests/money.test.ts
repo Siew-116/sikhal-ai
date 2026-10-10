@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseMYR,
   formatMYR,
+  formatMYRPlain,
   sumSen,
   assertSen,
   assertNonNegativeSen,
@@ -65,6 +66,43 @@ describe('formatMYR', () => {
 
   it('groups thousands correctly', () => {
     expect(formatMYR(100000000)).toBe('RM1,000,000.00');
+  });
+});
+
+/**
+ * formatMYRPlain exists because the editable "paid" fields on the New Case
+ * screen previously used `(sen / 100).toFixed(2)` — a float division in the
+ * money path, which the finance spec forbids. This formatter is integer-only
+ * and round-trips through parseMYR, which is the property that matters.
+ */
+describe('formatMYRPlain', () => {
+  it('omits the currency symbol and thousands separators', () => {
+    expect(formatMYRPlain(123456)).toBe('1234.56');
+  });
+
+  it('always shows two decimal places', () => {
+    expect(formatMYRPlain(8400)).toBe('84.00');
+    expect(formatMYRPlain(4250)).toBe('42.50');
+    expect(formatMYRPlain(3890)).toBe('38.90');
+    expect(formatMYRPlain(0)).toBe('0.00');
+  });
+
+  it('handles single-sen values', () => {
+    expect(formatMYRPlain(1)).toBe('0.01');
+    expect(formatMYRPlain(99)).toBe('0.99');
+    expect(formatMYRPlain(100)).toBe('1.00');
+  });
+
+  it('round-trips through parseMYR for every value in a range', () => {
+    // The property that makes it safe to put in an editable input.
+    for (let sen = 0; sen <= 5000; sen++) {
+      expect(parseMYR(formatMYRPlain(sen))).toBe(sen);
+    }
+  });
+
+  it('never produces scientific notation', () => {
+    // A large value must not format as "1e+21"; it would be unparseable.
+    expect(formatMYRPlain(100000000)).toBe('1000000.00');
   });
 });
 

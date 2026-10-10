@@ -24,16 +24,24 @@ export interface RunStep {
  */
 export function AgentRunPanel({ steps }: { steps: RunStep[] }) {
   const currentIndex = steps.findIndex((s) => s.status === 'running');
-  const doneCount = steps.filter((s) => s.status === 'ok' || s.status === 'error').length;
   const currentLabel = currentIndex >= 0 ? steps[currentIndex].label : null;
+
+  // Derive the displayed step index ONCE. The visible text and the screen-reader
+  // announcement previously computed this independently and could disagree by
+  // one, which is exactly the kind of drift a sighted and a non-sighted user
+  // would experience as two different products.
+  const completedCount = steps.filter((s) => s.status === 'ok').length;
+  const displayStep = currentLabel
+    ? Math.min(completedCount + 1, steps.length)
+    : completedCount;
 
   return (
     <div className="rounded-md border border-border bg-surface p-4 md:p-5">
       {/* Announce progress once, politely, without duplicating the visual list. */}
       <div className="sr-only" aria-live="polite" role="status">
         {currentLabel
-          ? `Step ${doneCount + 1} of ${steps.length}: ${currentLabel}`
-          : `Run complete. ${doneCount} of ${steps.length} steps finished.`}
+          ? `Step ${displayStep} of ${steps.length}: ${currentLabel}`
+          : `Run complete. ${completedCount} of ${steps.length} steps finished.`}
       </div>
 
       <div className="flex items-center justify-between gap-3">
@@ -44,7 +52,7 @@ export function AgentRunPanel({ steps }: { steps: RunStep[] }) {
           </span>
         </div>
         <span className="text-caption text-text-muted">
-          step {Math.min(doneCount + (currentLabel ? 1 : 0), steps.length)} of {steps.length}
+          step {displayStep} of {steps.length}
         </span>
       </div>
 

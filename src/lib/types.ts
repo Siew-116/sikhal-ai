@@ -25,6 +25,13 @@ export interface AffectedCustomer {
   status: AffectedStatus;
   /** Human-readable explanation of the status, surfaced to the founder. */
   note?: string;
+  /**
+   * Deterministic identity of this refund, computed from the business facts
+   * (order, customer, supplier event, cancelled lines). Persisted so the
+   * database can refuse to record the same refund twice, even across two
+   * different resolutions for the same cancellation.
+   */
+  refundKey?: string;
 }
 
 export interface MessageDraft {

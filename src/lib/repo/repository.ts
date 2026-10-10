@@ -61,6 +61,17 @@ export interface Repository {
     toolTrace: Resolution['toolTrace'];
     warnings: string[];
     contentHash: string;
+    /**
+     * The business order reference, denormalised onto each refund line so the
+     * cross-resolution duplicate guard can key on the business facts rather
+     * than on internal ids.
+     */
+    orderRef?: string;
+    /**
+     * Identifies the supplier-cancellation event these refunds belong to.
+     * Persisted so the cross-resolution duplicate guard has something to key on.
+     */
+    supplierUpdateId?: string;
   }): Promise<Resolution>;
 
   getResolution(resolutionId: string): Promise<Resolution | null>;

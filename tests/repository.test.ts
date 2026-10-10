@@ -10,9 +10,9 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryRepository } from '@/lib/repo/repository.memory';
-import { ApprovalError } from '@/lib/repo/errors';
+import { ApprovalError, IntegrityError } from '@/lib/repo/errors';
 import { DEMO_CASE } from '@/lib/fixtures';
-import { hashProposal } from '@/lib/core/approval';
+import { proposalHashOf } from '@/lib/core/approval';
 import type { Resolution } from '@/lib/types';
 
 const OWNER = 'founder';
@@ -28,11 +28,25 @@ async function seedCase(repo: MemoryRepository) {
   });
 }
 
-function proposal(caseId: string, total = 42840) {
+/**
+ * Build a proposal for the demo case.
+ *
+ * The total is DERIVED from the lines rather than passed in independently. The
+ * persistence layer asserts that Σ(lines) === total, and an earlier version of
+ * this helper hard-coded 42840 while supplying only 12650 sen of lines — an
+ * inconsistent proposal that only survived because nothing validated it. Using
+ * the full six-customer set keeps the fixture honest.
+ */
+function proposal(caseId: string) {
   const affected = [
     { customerId: 'CUST-001', customerName: 'Aisyah Rahman', paidSen: 8400, refundSen: 8400, status: 'refundable' as const },
     { customerId: 'CUST-002', customerName: 'Bala Subramaniam', paidSen: 4250, refundSen: 4250, status: 'refundable' as const },
+    { customerId: 'CUST-003', customerName: 'Chen Wei Ling', paidSen: 12600, refundSen: 12600, status: 'refundable' as const },
+    { customerId: 'CUST-004', customerName: 'Nurul Izzah', paidSen: 3890, refundSen: 3890, status: 'refundable' as const },
+    { customerId: 'CUST-005', customerName: 'Daniel Tan', paidSen: 9500, refundSen: 9500, status: 'refundable' as const },
+    { customerId: 'CUST-006', customerName: 'Farah Adibah', paidSen: 4200, refundSen: 4200, status: 'refundable' as const },
   ];
+  const total = affected.reduce((s, a) => s + a.refundSen, 0); // 42840
   return {
     caseId,
     affected,
@@ -42,7 +56,7 @@ function proposal(caseId: string, total = 42840) {
     conflicts: [],
     toolTrace: [],
     warnings: [],
-    contentHash: hashProposal({ affected, total }),
+    contentHash: proposalHashOf({ totalRefundSen: total, affected }),
   };
 }
 
@@ -88,6 +102,91 @@ describe('T29/T30 — duplicate refund prevention', () => {
     await repo.approveResolution(created.id, OWNER, created.contentHash);
 
     await expect(repo.saveResolution(proposal(c.id))).rejects.toThrow(ApprovalError);
+  });
+});
+
+/**
+ * Data-layer money invariants.
+ *
+ * These mirror the checks inside write_resolution_atomic() in schema.sql. They
+ * exist because the earlier implementation trusted the caller: any proposal
+ * whose lines did not add up to its own total could be persisted, and nothing
+ * stopped a second resolution from refunding the same customer for the same
+ * cancellation. Both are now refusals at the persistence boundary.
+ */
+describe('data-layer money invariants', () => {
+  let repo: MemoryRepository;
+  beforeEach(() => {
+    repo = new MemoryRepository();
+  });
+
+  it('refuses a proposal whose lines do not sum to its declared total', async () => {
+    const c = await seedCase(repo);
+    const bad = proposal(c.id);
+    // Drop a customer but keep the original total: the classic "lost a sen /
+    // lost a line" bug that would otherwise be invisible until payout.
+    bad.affected = bad.affected.slice(0, 3);
+    await expect(repo.saveResolution(bad)).rejects.toBeInstanceOf(IntegrityError);
+  });
+
+  it('refuses a proposal that refunds more than the case collected', async () => {
+    const c = await seedCase(repo);
+    const bad = proposal(c.id);
+    // Inflate every paidSen far beyond the recorded payments.
+    bad.affected = bad.affected.map((a) => ({ ...a, paidSen: 999999, refundSen: 999999 }));
+    bad.totalRefundSen = bad.affected.reduce((s, a) => s + a.refundSen, 0);
+    bad.contentHash = 'irrelevant';
+    await expect(repo.saveResolution(bad)).rejects.toBeInstanceOf(IntegrityError);
+  });
+
+  it('refuses a batch containing the same customer twice', async () => {
+    const c = await seedCase(repo);
+    const bad = proposal(c.id);
+    bad.affected = [bad.affected[0], { ...bad.affected[0] }];
+    bad.totalRefundSen = bad.affected.reduce((s, a) => s + a.refundSen, 0);
+    await expect(repo.saveResolution(bad)).rejects.toBeInstanceOf(IntegrityError);
+  });
+
+  it('refuses a cross-resolution refund for the same supplier cancellation', async () => {
+    // The scenario the per-resolution unique constraint cannot catch: the
+    // founder opens a SECOND case for the SAME cancellation event and the agent
+    // proposes refunds to the same customers again.
+    const c1 = await seedCase(repo);
+    const first = proposal(c1.id);
+    first.affected = first.affected.map((a) => ({ ...a, refundKey: `KEY-${a.customerId}` }));
+    const saved1 = await repo.saveResolution(first);
+    await repo.approveResolution(saved1.id, OWNER, first.contentHash);
+
+    // A second case, same refund keys => already refunded for this event.
+    const c2 = await repo.createCase({
+      supplierName: DEMO_CASE.supplierName,
+      orderRef: 'GB-2024-014',
+      cancellationReason: DEMO_CASE.cancellationReason,
+      cancelledOn: DEMO_CASE.cancelledOn,
+      orderLines: DEMO_CASE.orderLines,
+      payments: DEMO_CASE.payments,
+    });
+    const dup = proposal(c2.id);
+    dup.affected = dup.affected.map((a) => ({ ...a, refundKey: `KEY-${a.customerId}` }));
+
+    await expect(repo.saveResolution(dup)).rejects.toBeInstanceOf(IntegrityError);
+  });
+
+  it('allows the same customer to be refunded for a DIFFERENT cancellation', async () => {
+    // The guard must not be so broad that it blocks legitimate repeat business.
+    const c1 = await seedCase(repo);
+    const first = proposal(c1.id);
+    first.affected = first.affected.map((a) => ({ ...a, refundKey: `EVENT-A-${a.customerId}` }));
+    await repo.saveResolution(first);
+    const r1 = await repo.getResolutionForCase(c1.id);
+    await repo.approveResolution(r1!.id, OWNER, first.contentHash);
+
+    const c2 = await seedCase(repo);
+    const second = proposal(c2.id);
+    second.affected = second.affected.map((a) => ({ ...a, refundKey: `EVENT-B-${a.customerId}` }));
+
+    // Different event => different key => allowed.
+    await expect(repo.saveResolution(second)).resolves.toBeDefined();
   });
 });
 
@@ -143,14 +242,21 @@ describe('T31/T32 — execution is compare-and-swap', () => {
     expect(executed.status).toBe('executed');
   });
 
-  it('T31 a double execution is idempotent — no second refund', async () => {
+  it('T31 a second execution attempt is refused, not silently repeated', async () => {
     const c = await seedCase(repo);
     const created = await repo.saveResolution(proposal(c.id));
     await repo.approveResolution(created.id, OWNER, created.contentHash);
     const first = await repo.markExecuted(created.id);
-    const second = await repo.markExecuted(created.id);
-    expect(second.status).toBe('executed');
-    expect(second.id).toBe(first.id);
+    expect(first.status).toBe('executed');
+
+    // The refusal is an error. Both adapters must behave identically here —
+    // a silent success in one adapter would mask a double-execute.
+    await expect(repo.markExecuted(created.id)).rejects.toThrow(/already been executed/i);
+
+    // And the stored record is still the single execution.
+    const stored = await repo.getResolution(created.id);
+    expect(stored!.status).toBe('executed');
+    expect(stored!.executedAt).toBe(first.executedAt);
   });
 
   // Regression: markExecuted originally flipped status to 'executed' without
@@ -173,18 +279,21 @@ describe('T31/T32 — execution is compare-and-swap', () => {
     expect(reloaded!.executedAt).toBe(executed.executedAt);
   });
 
-  it('does not advance executedAt on a repeat execution', async () => {
+  it('does not advance executedAt on a repeat execution attempt', async () => {
     const c = await seedCase(repo);
     const created = await repo.saveResolution(proposal(c.id));
     await repo.approveResolution(created.id, OWNER, created.contentHash);
 
     const first = await repo.markExecuted(created.id);
     await new Promise((r) => setTimeout(r, 5));
-    const second = await repo.markExecuted(created.id);
 
-    // A second execution attempt must not rewrite the original timestamp —
-    // otherwise the audit trail would claim the refunds ran later than they did.
-    expect(second.executedAt).toBe(first.executedAt);
+    // The second attempt is refused. Critically, the refusal must not have
+    // rewritten the stored timestamp — otherwise the audit trail would claim
+    // the refunds ran later than they actually did.
+    await expect(repo.markExecuted(created.id)).rejects.toThrow(/already been executed/i);
+
+    const stored = await repo.getResolution(created.id);
+    expect(stored!.executedAt).toBe(first.executedAt);
   });
 
   it('leaves executedAt undefined for a merely approved resolution', async () => {
@@ -205,11 +314,17 @@ describe('T31/T32 — execution is compare-and-swap', () => {
       repo.markExecuted(created.id),
     ]);
     const fulfilled = results.filter((r) => r.status === 'fulfilled');
-    // Both may resolve (the second returns the already-executed record), but
-    // there must be exactly one resolution and it must be executed once.
-    expect(fulfilled.length).toBeGreaterThanOrEqual(1);
+    const rejected = results.filter((r) => r.status === 'rejected');
+
+    // Exactly one attempt may win. The loser must be REFUSED, not silently
+    // handed the winner's result — a silent success would mean the caller
+    // cannot tell whether it caused the execution.
+    expect(fulfilled.length).toBe(1);
+    expect(rejected.length).toBe(1);
+
     const stored = await repo.getResolution(created.id);
     expect(stored!.status).toBe('executed');
+    expect(stored!.executedAt).toBeDefined();
 
     const all = await repo.listAudit(created.id);
     expect(all.length).toBe(0); // no audit written by the adapter itself

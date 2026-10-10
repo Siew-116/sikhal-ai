@@ -25,7 +25,7 @@ import type {
 import type { CaseRecord, Resolution } from '@/lib/types';
 import type { Commitment } from '@/lib/core/conflict';
 import type { FixtureOrderLine, FixturePayment } from '@/lib/fixtures';
-import { ApprovalError } from './errors';
+import { ApprovalError, IntegrityError } from './errors';
 
 interface StoredCase {
   record: CaseRecord;
@@ -84,6 +84,61 @@ export class MemoryRepository implements Repository {
   async saveResolution(
     input: Parameters<Repository['saveResolution']>[0],
   ): Promise<Resolution> {
+    // ── Data-layer invariants, mirroring write_resolution_atomic() in SQL ──
+    //
+    // These are the same three checks the Postgres function performs. Keeping
+    // them identical in both adapters is the point: a test that passes against
+    // this adapter must describe real production behaviour, not a friendlier
+    // in-process approximation.
+
+    // (a) The lines must sum to the declared total. A dropped or duplicated sen
+    //     would otherwise be invisible until a customer complained.
+    const lineTotal = input.affected.reduce((sum, a) => sum + a.refundSen, 0);
+    if (lineTotal !== input.totalRefundSen) {
+      throw new IntegrityError(
+        `Refund lines sum to ${lineTotal} sen but the resolution total is ` +
+          `${input.totalRefundSen} sen. Refusing to persist an inconsistent proposal.`,
+      );
+    }
+
+    // (b) Never refund more than the case actually collected.
+    const payments = await this.getPayments(input.caseId);
+    const collected = payments.reduce((sum, p) => sum + p.amountSen, 0);
+    const refundablePaid = input.affected.reduce((sum, a) => sum + a.paidSen, 0);
+    if (refundablePaid > collected) {
+      throw new IntegrityError(
+        `Total refundable paid (${refundablePaid} sen) exceeds total collected ` +
+          `(${collected} sen) for case ${input.caseId}.`,
+      );
+    }
+
+    // (c) No duplicate customer within the batch.
+    const seen = new Set<string>();
+    for (const a of input.affected) {
+      if (seen.has(a.customerId)) {
+        throw new IntegrityError(
+          `Refund batch contains a duplicate customer: ${a.customerId}.`,
+        );
+      }
+      seen.add(a.customerId);
+    }
+
+    // (d) CROSS-RESOLUTION duplicate guard. A refund key that already appears in
+    //     another resolution for the same supplier event means this customer has
+    //     already been refunded for this cancellation — refuse rather than
+    //     create a second identical liability.
+    const existingKeys = this.executedRefundKeys();
+    for (const a of input.affected) {
+      if (!a.refundKey) continue;
+      if (existingKeys.has(a.refundKey)) {
+        throw new IntegrityError(
+          `A refund for ${a.customerId} has already been recorded for this ` +
+            `supplier cancellation (key ${a.refundKey.slice(0, 12)}…). ` +
+            `Refusing to create a duplicate refund.`,
+        );
+      }
+    }
+
     // Re-running the agent on the same case replaces the draft resolution
     // rather than accumulating duplicates. This is the memory-adapter
     // counterpart of 严核明's ON CONFLICT DO NOTHING semantics.
@@ -114,6 +169,23 @@ export class MemoryRepository implements Repository {
 
     this.resolutions.set(id, resolution);
     return resolution;
+  }
+
+  /**
+   * Every refund key already committed in an approved or executed resolution.
+   *
+   * Mirrors the partial unique indexes `refund_key_executed_uniq` and the
+   * `status in ('paid','approved')` predicate in schema.sql.
+   */
+  private executedRefundKeys(): Set<string> {
+    const keys = new Set<string>();
+    for (const r of this.resolutions.values()) {
+      if (r.status !== 'approved' && r.status !== 'executed') continue;
+      for (const a of r.affected) {
+        if (a.refundKey) keys.add(a.refundKey);
+      }
+    }
+    return keys;
   }
 
   async getResolution(resolutionId: string): Promise<Resolution | null> {
@@ -165,9 +237,20 @@ export class MemoryRepository implements Repository {
     if (!resolution) throw new ApprovalError('Resolution not found.');
 
     // Compare-and-swap: only an `approved` resolution may become `executed`.
-    // A second concurrent call sees status !== 'approved' and is refused — this
-    // is what makes a double-click safe.
-    if (resolution.status === 'executed') return resolution;
+    // A second call finds status !== 'approved' and is refused — this is what
+    // makes a double-click safe.
+    //
+    // The refusal is an ERROR, not a silent success. This adapter must match the
+    // Supabase adapter, which finds no row matching `status = 'approved'` on a
+    // second call and throws. If one adapter swallowed the double-execute and
+    // the other refused it, a test passing against memory would not describe
+    // production behaviour — the divergence would only surface in a real
+    // deployment, on the money path.
+    if (resolution.status === 'executed') {
+      throw new ApprovalError(
+        'Cannot execute: This resolution has already been executed.',
+      );
+    }
 
     if (resolution.status !== 'approved') {
       throw new ApprovalError(

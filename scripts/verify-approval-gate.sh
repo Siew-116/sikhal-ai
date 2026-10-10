@@ -16,7 +16,11 @@ fail() { echo "  FAIL  $1"; FAIL=$((FAIL+1)); }
 # always exercises the same six-customer scenario the UI's "Load sample case"
 # button produces.
 echo "=== STEP 0: create case + run pipeline ==="
-PAYLOAD=$(node scripts/demo-payload.mjs)
+# The order reference is suffixed with a unique per-run token so repeated runs
+# exercise a fresh cancellation. The duplicate guard is deliberately NOT
+# bypassed — step 7 re-posts this exact reference to prove the guard fires.
+ORDER_SUFFIX="VERIFY-$$-$(date +%s)"
+PAYLOAD=$(node scripts/demo-payload.mjs "$ORDER_SUFFIX")
 CREATE=$(curl -s -X POST "$B/api/cases" \
   -H 'Content-Type: application/json' \
   -d "$PAYLOAD")
@@ -105,6 +109,28 @@ node -e "
   if (paid === 42840) console.log('  PASS  total paid across customers is RM428.40');
   else { console.log('  FAIL  unexpected total paid: ' + paid); process.exit(1); }
 " "$RELOAD" || FAIL=$((FAIL+1))
+
+# ---- 7. Cross-resolution duplicate guard --------------------------------
+# Re-submitting the SAME order reference must be refused: those customers have
+# already been refunded for this supplier cancellation. This is the guarantee
+# that a per-resolution unique constraint cannot provide.
+echo "=== STEP 7: duplicate refund for the same cancellation must be refused ==="
+REQ=$(node scripts/demo-payload.mjs "$ORDER_SUFFIX")
+R=$(curl -s -w '\n%{http_code}' -X POST "$B/api/cases" \
+  -H 'Content-Type: application/json' -d "$REQ")
+CODE=$(echo "$R" | tail -1); BODY=$(echo "$R" | sed '$d')
+echo "  HTTP $CODE"
+echo "  $BODY" | head -c 220; echo
+if [ "$CODE" = "409" ]; then
+  pass "duplicate refund refused with 409 (a conflict, not a server error)"
+else
+  fail "expected 409, got $CODE"
+fi
+if echo "$BODY" | grep -qi 'already been recorded\|duplicate'; then
+  pass "refusal names the duplicate"
+else
+  fail "refusal message unclear: $BODY"
+fi
 
 echo
 if [ "$FAIL" = "0" ]; then echo "RESULT: ALL APPROVAL-GATE ASSERTIONS PASSED"; else echo "RESULT: $FAIL ASSERTION(S) FAILED"; fi

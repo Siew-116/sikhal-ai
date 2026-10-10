@@ -1,6 +1,6 @@
 import { getRepository } from '@/lib/repo/repository';
 import { runResolutionPipeline } from '@/lib/tools/pipeline';
-import { hashProposal } from '@/lib/core/approval';
+import { proposalHashOf } from '@/lib/core/approval';
 import { ok, handleError, fail } from '@/lib/api';
 import type { Commitment } from '@/lib/core/conflict';
 import { DEMO_COMMITMENTS } from '@/lib/fixtures';
@@ -67,9 +67,14 @@ export async function POST(request: Request) {
       commitments,
     });
 
-    const contentHash = hashProposal({
-      total: result.totalRefundSen,
-      affected: result.affected.map((a) => ({ id: a.customerId, amount: a.refundSen })),
+    // Hashed through the shared canonical function so the propose, approve and
+    // execute paths can never disagree about what content is being bound.
+    const contentHash = proposalHashOf({
+      totalRefundSen: result.totalRefundSen,
+      affected: result.affected.map((a) => ({
+        customerId: a.customerId,
+        refundSen: a.refundSen,
+      })),
     });
 
     const resolution = await repo.saveResolution({
@@ -82,6 +87,10 @@ export async function POST(request: Request) {
       toolTrace: result.toolTrace,
       warnings: result.warnings,
       contentHash,
+      // Business facts carried through so the persistence layer can derive and
+      // enforce the cross-resolution duplicate guard.
+      orderRef,
+      supplierUpdateId: `${supplierName}|${cancelledOn}`,
     });
 
     await repo.appendAudit({
