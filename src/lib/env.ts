@@ -37,8 +37,8 @@ function read(key: string): string | undefined {
  */
 export function getSupabaseConfig(): SupabaseConfig | null {
   const url = read('NEXT_PUBLIC_SUPABASE_URL');
-  const anonKey = read('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  const serviceRoleKey = read('SUPABASE_SERVICE_ROLE_KEY');
+  const anonKey = read('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
+  const serviceRoleKey = read('SUPABASE_SECRET_KEY');
 
   if (!url || !anonKey || !serviceRoleKey) return null;
   return { url, anonKey, serviceRoleKey };
@@ -58,8 +58,8 @@ export function getAppUrl(): string {
 export function getEnvStatus(): EnvStatus {
   const missing: string[] = [];
   if (!read('NEXT_PUBLIC_SUPABASE_URL')) missing.push('NEXT_PUBLIC_SUPABASE_URL');
-  if (!read('NEXT_PUBLIC_SUPABASE_ANON_KEY')) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  if (!read('SUPABASE_SERVICE_ROLE_KEY')) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  if (!read('NEXT_PUBLIC_SUPABASE_ANON_KEY')) missing.push('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
+  if (!read('SUPABASE_SERVICE_ROLE_KEY')) missing.push('SUPABASE_SECRET_KEY');
 
   return {
     supabaseConfigured: missing.length === 0,
