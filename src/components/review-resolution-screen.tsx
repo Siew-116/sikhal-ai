@@ -302,6 +302,7 @@ export function ReviewResolutionScreen({
                   size="sm"
                   disabled={reschedulingId !== null}
                   onClick={() => useSuggestedSlot(step.id)}
+                  className="border-[#B43E2E] text-[#922F22] hover:bg-[#F7E5DE]"
                 >
                   {reschedulingId === step.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
                   Use {formatDayTime(step.alternative!.dayOfWeek, step.alternative!.startMinute, step.alternative!.endMinute)} for {step.label}
@@ -708,7 +709,7 @@ export function ReviewResolutionScreen({
                   <Button
                     size="lg"
                     disabled={approvalBlocked}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto bg-[#B43E2E] text-white hover:bg-[#922F22]"
                     // Tie the refusal reason to the control. A disabled button is
                     // not focusable, so without this a keyboard or screen-reader
                     // user reaches the control, finds it inert, and is told
