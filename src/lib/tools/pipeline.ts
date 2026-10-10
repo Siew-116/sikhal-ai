@@ -474,7 +474,7 @@ function checkStudyConflicts(
     }
 
     const duration = step.endMinute - step.startMinute;
-    const alternative = findAlternativeSlot(
+    const slot = findAlternativeSlot(
       step.dayOfWeek as Commitment['dayOfWeek'],
       duration,
       commitments,
@@ -487,7 +487,9 @@ function checkStudyConflicts(
       ...step,
       blocked: true,
       conflictIds: stepConflicts.map((c) => c.commitmentId),
-      alternative: alternative ?? undefined,
+      alternative: slot
+        ? { dayOfWeek: step.dayOfWeek, startMinute: slot.startMinute, endMinute: slot.endMinute }
+        : undefined,
     };
   });
 
