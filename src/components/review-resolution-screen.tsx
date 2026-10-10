@@ -214,20 +214,39 @@ export function ReviewResolutionScreen({
           Back to new case
         </Link>
 
-        <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-[clamp(2rem,4vw,3.25rem)] font-semibold tracking-[-0.05em]">Your resolution plan</h1>
-            <p className="mt-2 max-w-prose text-body text-text-secondary">
-              {caseRecord.supplierName} cancelled {caseRecord.orderRef}.{' '}
-              {refundable.length} customer{refundable.length === 1 ? '' : 's'} affected,{' '}
-              <span className="tabular font-medium text-text-primary">
-                {formatMYR(resolution.totalRefundSen)}
-              </span>{' '}
-              to refund.
+        <section className="mt-7 border-b border-border-strong pb-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-semibold tracking-[0.07em] text-text-secondary">
+              RESOLUTION / {caseRecord.orderRef}
             </p>
+            <StatusPill status={resolution.status} />
           </div>
-          <StatusPill status={resolution.status} />
-        </div>
+          <h1 className="mt-3 text-[clamp(2rem,4vw,3rem)] font-semibold tracking-[-0.05em]">
+            Review before you approve.
+          </h1>
+          <p className="mt-2 text-sm text-text-secondary">
+            {caseRecord.supplierName} · {refundable.length} affected customer{refundable.length === 1 ? '' : 's'}
+          </p>
+          <div className="mt-7 flex flex-wrap items-end gap-x-12 gap-y-5">
+            <div>
+              <p className="text-xs font-medium text-text-secondary">TOTAL PROPOSED REFUND</p>
+              <p className="tabular mt-1 text-[clamp(2.3rem,5vw,3.5rem)] font-semibold leading-none tracking-[-0.055em] text-text-primary">
+                {formatMYR(resolution.totalRefundSen)}
+              </p>
+            </div>
+            <div className="pb-1">
+              <p className="text-xs font-medium text-text-secondary">CUSTOMERS</p>
+              <p className="tabular mt-1 text-2xl font-semibold text-text-primary">{refundable.length}</p>
+            </div>
+            <div className="pb-1">
+              <p className="text-xs font-medium text-text-secondary">SCHEDULE</p>
+              <p className="mt-1 text-sm font-semibold text-text-primary">
+                {blockedSteps.length > 0 ? `${blockedSteps.length} conflict to resolve` : 'No conflicts'}
+              </p>
+            </div>
+          </div>
+          <p className="mt-5 text-xs text-text-muted">Proposal only. No money transferred and no messages sent.</p>
+        </section>
 
         {/* ── ACADEMIC CONFLICT — the loudest element on the page ─────── */}
         {blockedSteps.length > 0 && (
@@ -286,7 +305,7 @@ export function ReviewResolutionScreen({
 
         {blockedSteps.length === 0 && (
           <Alert variant="success" title="No academic conflicts" className="mt-6">
-            Every proposed action falls outside your class and study commitments.
+            Your planned actions do not overlap your recorded study commitments.
           </Alert>
         )}
 
@@ -313,7 +332,7 @@ export function ReviewResolutionScreen({
             <CardHeader>
               <CardTitle className="text-subheading">Proposed refunds</CardTitle>
               <CardDescription>
-                Computed server-side in exact sen. Amounts are authoritative.
+                Based on recorded payments. Review every amount before approving.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -487,7 +506,7 @@ export function ReviewResolutionScreen({
         <Card className="mt-5">
           <CardHeader>
             <CardTitle className="text-subheading">
-              Ready-to-copy messages ({resolution.drafts.length})
+              Customer messages ({resolution.drafts.length})
             </CardTitle>
             <CardDescription>
               Drafts are for your review and copying. SikHal does not automatically send messages,
