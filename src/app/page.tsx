@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NewCaseScreen } from '@/components/new-case-screen';
 import { getRepository } from '@/lib/repo/repository';
 
