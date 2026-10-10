@@ -219,9 +219,9 @@ export function ReviewResolutionScreen({
             <span className="sikhal-eyebrow">RESOLUTION / {caseRecord.orderRef}</span>
             <StatusPill status={resolution.status} />
           </div>
-          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,.9fr)] lg:gap-12">
+          <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
             <div>
-              <h1 className="sikhal-display text-[clamp(3.4rem,6vw,6rem)]">
+              <h1 className="sikhal-display text-[clamp(2.8rem,4.5vw,4.9rem)]">
                 CUT TO THE<br/><span className="text-accent">RESOLUTION.</span>
               </h1>
               <p className="mt-6 max-w-[450px] text-base leading-7 text-text-primary">
@@ -537,7 +537,7 @@ export function ReviewResolutionScreen({
               resolution.drafts.map((draft) => {
                 const isEditing = editingId === draft.customerId;
                 return (
-                  <div key={draft.customerId} className="rounded-md border border-border p-4">
+                  <div key={draft.customerId} className="border-t border-border-strong py-5 first:border-t-0">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <span className="text-body-sm font-medium text-text-primary">
@@ -677,7 +677,7 @@ export function ReviewResolutionScreen({
         )}
 
         {/* ── Action bar ─────────────────────────────────────────────── */}
-        <div className="sticky bottom-0 mt-6 border-t border-border bg-bg/95 py-4 backdrop-blur">
+        <div className="lg:sticky lg:bottom-0 mt-6 border-t border-border-strong bg-bg/95 py-4 backdrop-blur">
           {alreadyApproved ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
