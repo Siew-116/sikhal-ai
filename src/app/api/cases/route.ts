@@ -4,6 +4,7 @@ import { proposalHashOf } from '@/lib/core/approval';
 import { ok, handleError, fail } from '@/lib/api';
 import type { Commitment } from '@/lib/core/conflict';
 import { DEMO_COMMITMENTS } from '@/lib/fixtures';
+import { getDraftWithAI } from '@/lib/ai/customer-draft';
 
 /**
  * POST /api/cases
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
       orderLines,
       payments,
       commitments,
+      draftWithAI: getDraftWithAI(),
     });
 
     // Hashed through the shared canonical function so the propose, approve and
