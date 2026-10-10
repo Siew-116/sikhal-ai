@@ -22,21 +22,21 @@ export function AppHeader({
 }) {
   return (
     <header
-      className={cn('sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur-md', className)}
+      className={cn('sticky top-0 z-40 border-b border-border bg-[#F8F9F7]/95 backdrop-blur-md', className)}
       
     >
-      <div className="sikhal-container flex h-[72px] items-center justify-between gap-4">
+      <div className="sikhal-container flex h-[66px] items-center justify-between gap-4">
         <div className="flex items-baseline gap-3">
           <Link
             href="/"
-            className="text-[23px] font-bold tracking-[-0.065em] text-primary"
+            className="text-[22px] font-bold tracking-[-0.065em] text-primary"
             aria-label="SikHal home"
           >
-            sikhal<span className="text-[#C86B4A]">.</span>
+            sikhal<span className="text-[#77A98A]">.</span>
           </Link>
           {screenTitle && (
-            <span className="hidden text-body-sm text-text-secondary sm:inline" aria-hidden="true">
-              {screenTitle === "New Case" ? "Resolve a problem" : "Review the plan"}
+            <span className="hidden border-l border-border-strong pl-3 text-xs font-medium text-text-secondary sm:inline" aria-hidden="true">
+              {screenTitle === "New Case" ? "Workspace" : "Resolution review"}
             </span>
           )}
         </div>
