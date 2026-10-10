@@ -82,10 +82,9 @@ export async function POST(
 /**
  * PUT /api/resolutions/[id]/approve
  *
- * Executes an approved resolution. This is the action that would perform the
- * financial and external steps. In the MVP it marks the resolution executed and
- * records the audit trail; no live payment gateway is configured, and the UI
- * states this plainly.
+ * Records an internal workflow milestone only. There is no live payment or
+ * messaging gateway in this MVP. The legacy DB state 'executed' does NOT mean
+ * money moved or messages were sent; display and audit must state this clearly.
  *
  * Guarantees:
  *   - fails closed unless the resolution is approved (H1)
@@ -148,7 +147,10 @@ export async function PUT(
       payload: {
         totalRefundSen: executed.totalRefundSen,
         customers: executed.affected.length,
-        gateway: 'none — MVP records the action without a live payment gateway',
+        gateway: 'none',
+        paymentTransferred: false,
+        messagesSent: false,
+        meaning: 'internal_workflow_record_only',
       },
     });
 
