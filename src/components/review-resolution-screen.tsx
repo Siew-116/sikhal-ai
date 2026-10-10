@@ -495,6 +495,13 @@ export function ReviewResolutionScreen({
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
+            {resolution.drafts.some((draft) => draft.generatedBy === 'fallback') && (
+              <Alert variant="info" title="Template fallback is active">
+                {resolution.toolTrace.find((entry) => entry.tool === 'draftMessages')?.summary
+                  ?? 'The AI did not produce a usable draft. The safe template was used instead.'}
+                {' '}These messages were not sent.
+              </Alert>
+            )}
             {resolution.drafts.length === 0 ? (
               <Alert variant="info" title="No customer messages were generated">
                 This happens when there are no refundable customers.
